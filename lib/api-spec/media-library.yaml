@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info: { title: Api, version: 0.1.0 }
+paths:
+  /admin/{scope}/{parentId}/media-library:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    get:
+      operationId: mediaLibraryAdminList
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Parent authoring metadata and independent course media revision, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryAdminList" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /{scope}/{parentId}/media-library:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    get:
+      operationId: mediaLibraryStudentList
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Only authorized published placements and current ready revisions; never staged revisions or locators, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryStudentList" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/{scope}/{parentId}/media-library/assets:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    post:
+      operationId: mediaLibraryAssetCreate
+      security: [{ bearerAuth: [] }]
+      description: Creates draft metadata, a pending immutable revision and draft placement. Does not upload or mark content scanned/ready.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryAssetInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/assets/{assetId}:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Asset" }]
+    patch:
+      operationId: mediaLibraryAssetUpdate
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryAssetUpdate" } } } }
+      responses: { "200": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/assets/{assetId}/revisions:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Asset" }]
+    post:
+      operationId: mediaLibraryRevisionStage
+      security: [{ bearerAuth: [] }]
+      description: Stages a pending replacement without changing the current published revision. No client-supplied processing evidence.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryRevisionInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/assets/{assetId}/activate:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Asset" }]
+    post:
+      operationId: mediaLibraryRevisionActivate
+      security: [{ bearerAuth: [] }]
+      description: Activates only the owned currently staged genuinely clean private ready revision. Failure leaves the working revision untouched.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryActivationInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/assets/{assetId}/lifecycle:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Asset" }]
+    post:
+      operationId: mediaLibraryAssetLifecycle
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryLifecycleInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/placements:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    post:
+      operationId: mediaLibraryPlacementCreate
+      security: [{ bearerAuth: [] }]
+      description: Places an unplaced course-owned asset. Cross-parent reuse and cross-course sharing are not supported.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryPlacementInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/placements/{placementId}:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Placement" }]
+    patch:
+      operationId: mediaLibraryPlacementUpdate
+      security: [{ bearerAuth: [] }]
+      description: Moves membership within the same parent scope only.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryPlacementUpdate" } } } }
+      responses: { "200": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/placements/{placementId}/lifecycle:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Placement" }]
+    post:
+      operationId: mediaLibraryPlacementLifecycle
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryLifecycleInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/placement-order:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    put:
+      operationId: mediaLibraryPlacementOrder
+      security: [{ bearerAuth: [] }]
+      description: Complete unique permutation of editable resources in the specified parent/group. Archived records remain unchanged.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryOrderInput" } } } }
+      responses: { "200": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/collections:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    post:
+      operationId: mediaLibraryCollectionCreate
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryCollectionInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/collections/{collectionId}:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Collection" }]
+    patch:
+      operationId: mediaLibraryCollectionUpdate
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryCollectionUpdate" } } } }
+      responses: { "200": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/collections/{collectionId}/lifecycle:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }, { $ref: "#/components/parameters/Collection" }]
+    post:
+      operationId: mediaLibraryCollectionLifecycle
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryLifecycleInput" } } } }
+      responses: { "201": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+  /admin/{scope}/{parentId}/media-library/collection-order:
+    parameters: [{ $ref: "#/components/parameters/Scope" }, { $ref: "#/components/parameters/Parent" }]
+    put:
+      operationId: mediaLibraryCollectionOrder
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryCollectionOrderInput" } } } }
+      responses: { "200": { $ref: "#/components/responses/Mutation" }, default: { $ref: "#/components/responses/Error" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Scope: { name: scope, in: path, required: true, schema: { type: string, enum: [courses, chapters, lessons] } }
+    Parent: { name: parentId, in: path, required: true, schema: { type: string, format: uuid } }
+    Asset: { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    Placement: { name: placementId, in: path, required: true, schema: { type: string, format: uuid } }
+    Collection: { name: collectionId, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    Mutation: { description: Atomic metadata mutation with independent media revision and audit; stale expected revision returns 409, content: { application/json: { schema: { $ref: "#/components/schemas/LibraryMutation" } } } }
+    Error: { description: "400 invalid input; 401 unauthenticated; 403 role/MFA/account; 404 inaccessible scope; 409 stale revision/read-only/not-ready", content: { application/json: { schema: { type: object, properties: { message: { type: string }, statusCode: { type: integer } } } } } }
+  schemas:
+    LibraryAssetInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, title, kind, filename, mimeType, bytes]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        kind: { type: string, enum: [video, document, image, attachment] }
+        filename: { type: string, minLength: 1, maxLength: 255 }
+        mimeType: { type: string, minLength: 1, maxLength: 100 }
+        bytes: { type: integer, minimum: 1, maximum: 2147483648 }
+        downloadsAllowed: { type: boolean, default: false }
+        collectionId: { type: [string, "null"], format: uuid, default: null }
+    LibraryAssetUpdate:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        downloadsAllowed: { type: boolean }
+    LibraryRevisionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, filename, mimeType, bytes]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        filename: { type: string, minLength: 1, maxLength: 255 }
+        mimeType: { type: string, minLength: 1, maxLength: 100 }
+        bytes: { type: integer, minimum: 1, maximum: 2147483648 }
+    LibraryActivationInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, revisionId]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        revisionId: { type: string, format: uuid }
+    LibraryLifecycleInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, action]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        action: { type: string, enum: [publish, unpublish, archive, remove] }
+    LibraryPlacementInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, assetId]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        assetId: { type: string, format: uuid }
+        collectionId: { type: [string, "null"], format: uuid, default: null }
+    LibraryPlacementUpdate:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, collectionId]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        collectionId: { type: [string, "null"], format: uuid }
+    LibraryCollectionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, title]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 1000, default: "" }
+    LibraryCollectionUpdate:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 1000 }
+    LibraryOrderInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, ids]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        ids: { type: array, maxItems: 500, uniqueItems: true, items: { type: string, format: uuid } }
+        collectionId: { type: [string, "null"], format: uuid, default: null }
+    LibraryCollectionOrderInput:
+      type: object
+      additionalProperties: false
+      required: [expectedMediaRevision, ids]
+      properties:
+        expectedMediaRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        ids: { type: array, maxItems: 500, uniqueItems: true, items: { type: string, format: uuid } }
+    LibraryAsset:
+      type: object
+      additionalProperties: false
+      required: [id, kind, title, status, downloadsAllowed, currentRevisionId, stagedRevisionId]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [video, document, image, attachment] }
+        title: { type: string }
+        status: { type: string, enum: [draft, published, archived, removed] }
+        downloadsAllowed: { type: boolean }
+        currentRevisionId: { type: [string, "null"], format: uuid }
+        stagedRevisionId: { type: [string, "null"], format: uuid }
+    LibraryStudentAsset:
+      type: object
+      additionalProperties: false
+      required: [id, kind, title, downloadsAllowed]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [video, document, image, attachment] }
+        title: { type: string }
+        downloadsAllowed: { type: boolean }
+    LibraryRevision:
+      type: object
+      additionalProperties: false
+      required: [id, filename, mimeType, bytes, state, scanState, duration, pageCount]
+      properties:
+        id: { type: string, format: uuid }
+        filename: { type: string }
+        mimeType: { type: string }
+        bytes: { type: integer }
+        state: { type: string, enum: [pending, quarantined, processing, ready, failed, rejected] }
+        scanState: { type: string, enum: [pending, scanning, clean, failed, rejected] }
+        duration: { type: [integer, "null"] }
+        pageCount: { type: [integer, "null"] }
+    LibraryPlacement:
+      type: object
+      additionalProperties: false
+      required: [id, assetId, collectionId, status, position]
+      properties:
+        id: { type: string, format: uuid }
+        assetId: { type: string, format: uuid }
+        collectionId: { type: [string, "null"], format: uuid }
+        status: { type: string, enum: [draft, published, archived, removed] }
+        position: { type: integer }
+    LibraryCollection:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, status, position]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [draft, published, archived, removed] }
+        position: { type: integer }
+    LibraryAdminItem:
+      type: object
+      additionalProperties: false
+      required: [placement, asset, revision, revisions]
+      properties:
+        placement: { $ref: "#/components/schemas/LibraryPlacement" }
+        asset: { $ref: "#/components/schemas/LibraryAsset" }
+        revision: { anyOf: [{ $ref: "#/components/schemas/LibraryRevision" }, { type: "null" }] }
+        revisions: { type: array, items: { $ref: "#/components/schemas/LibraryRevision" } }
+    LibraryStudentItem:
+      type: object
+      additionalProperties: false
+      required: [placement, asset, revision]
+      properties:
+        placement: { $ref: "#/components/schemas/LibraryPlacement" }
+        asset: { $ref: "#/components/schemas/LibraryStudentAsset" }
+        revision: { $ref: "#/components/schemas/LibraryRevision" }
+    LibraryAdminList:
+      type: object
+      additionalProperties: false
+      required: [items, collections, mediaEditRevision]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LibraryAdminItem" } }
+        collections: { type: array, items: { $ref: "#/components/schemas/LibraryCollection" } }
+        mediaEditRevision: { type: integer }
+    LibraryStudentList:
+      type: object
+      additionalProperties: false
+      required: [items, collections]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LibraryStudentItem" } }
+        collections: { type: array, items: { $ref: "#/components/schemas/LibraryCollection" } }
+    LibraryMutation:
+      type: object
+      additionalProperties: false
+      required: [mediaEditRevision]
+      properties:
+        mediaEditRevision: { type: integer }
+        asset: { $ref: "#/components/schemas/LibraryAsset" }
+        revision: { $ref: "#/components/schemas/LibraryRevision" }
+        placement: { $ref: "#/components/schemas/LibraryPlacement" }
+        collection: { $ref: "#/components/schemas/LibraryCollection" }
+        ids: { type: array, items: { type: string, format: uuid } }

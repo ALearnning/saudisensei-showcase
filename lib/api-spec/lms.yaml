@@ -1,0 +1,438 @@
+openapi: 3.1.0
+info: { title: Api, version: 0.2.0 }
+paths:
+  /courses:
+    get:
+      operationId: listMyCourses
+      security: [{ bearerAuth: [] }]
+      parameters: &paging
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, published, archived, active, revoked, expired] } }
+        - { name: courseId, in: query, schema: { type: string, format: uuid } }
+        - { name: studentId, in: query, schema: { type: string, format: uuid } }
+      responses: &coursePageResponse
+        "200": { description: Courses, content: { application/json: { schema: { $ref: "#/components/schemas/LmsCoursePage" } } } }
+        "400": { description: Invalid input }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+  /courses/{courseId}:
+    parameters: &courseParam
+      - { name: courseId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getMyCourse
+      security: [{ bearerAuth: [] }]
+      responses: &courseResponse
+        "200": { description: Course, content: { application/json: { schema: { $ref: "#/components/schemas/LmsCourse" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+        "404": { description: Unavailable resource }
+        "409": { description: Stale revision or invalid transition }
+  /me/enrollments:
+    get:
+      operationId: listMyEnrollments
+      security: [{ bearerAuth: [] }]
+      parameters: *paging
+      responses: &enrollmentPageResponse
+        "200": { description: Enrollments, content: { application/json: { schema: { $ref: "#/components/schemas/LmsEnrollmentPage" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+  /me/courses/{courseId}/progress:
+    parameters: *courseParam
+    get:
+      operationId: getMyProgress
+      security: [{ bearerAuth: [] }]
+      responses: &progressResponse
+        "200": { description: Current curriculum progress, content: { application/json: { schema: { $ref: "#/components/schemas/LmsProgress" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+        "404": { description: Unavailable resource }
+  /me/dashboard:
+    get:
+      operationId: getStudentDashboard
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Student dashboard, content: { application/json: { schema: { $ref: "#/components/schemas/LmsStudentDashboard" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+  /lessons/{lessonId}:
+    parameters: &lessonParam
+      - { name: lessonId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getMyLesson
+      security: [{ bearerAuth: [] }]
+      responses: &lessonResponse
+        "200": { description: Lesson, content: { application/json: { schema: { $ref: "#/components/schemas/LmsLesson" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+        "404": { description: Unavailable resource }
+        "409": { description: Stale revision or invalid transition }
+  /me/lessons/{lessonId}/completion:
+    parameters: *lessonParam
+    put:
+      operationId: completeMyLesson
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Original completion and fresh progress, content: { application/json: { schema: { $ref: "#/components/schemas/LmsCompletion" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Forbidden }
+        "404": { description: Unavailable resource }
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Admin dashboard, content: { application/json: { schema: { $ref: "#/components/schemas/LmsAdminDashboard" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Admin and MFA required }
+  /admin/courses:
+    get:
+      operationId: listAdminCourses
+      security: [{ bearerAuth: [] }]
+      parameters: *paging
+      responses: *coursePageResponse
+    post:
+      operationId: createCourse
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsCreateCourse" } } }
+      responses:
+        "201": { description: Draft course, content: { application/json: { schema: { $ref: "#/components/schemas/LmsCourse" } } } }
+        "400": { description: Invalid input }
+        "403": { description: Admin and MFA required }
+  /admin/courses/{courseId}:
+    parameters: *courseParam
+    get:
+      operationId: getAdminCourse
+      security: [{ bearerAuth: [] }]
+      responses: *courseResponse
+    patch:
+      operationId: editCourse
+      security: [{ bearerAuth: [] }]
+      requestBody: &editBody
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsEdit" } } }
+      responses: *courseResponse
+  /admin/courses/{courseId}/publish:
+    parameters: *courseParam
+    post:
+      operationId: publishCourse
+      security: [{ bearerAuth: [] }]
+      requestBody: &revisionBody
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsRevision" } } }
+      responses: *courseResponse
+  /admin/courses/{courseId}/unpublish:
+    parameters: *courseParam
+    post:
+      operationId: unpublishCourse
+      security: [{ bearerAuth: [] }]
+      requestBody: *revisionBody
+      responses: *courseResponse
+  /admin/courses/{courseId}/archive:
+    parameters: *courseParam
+    post:
+      operationId: archiveCourse
+      security: [{ bearerAuth: [] }]
+      requestBody: *revisionBody
+      responses: *courseResponse
+  /admin/courses/{courseId}/chapters:
+    parameters: *courseParam
+    post:
+      operationId: createChapter
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsCreateChapter" } } }
+      responses:
+        "201": { description: Draft chapter, content: { application/json: { schema: { $ref: "#/components/schemas/LmsChapter" } } } }
+        "400": { description: Invalid input }
+        "409": { description: Stale revision or archived parent }
+  /admin/chapters/{chapterId}:
+    parameters: &chapterParam
+      - { name: chapterId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getAdminChapter
+      security: [{ bearerAuth: [] }]
+      responses: &chapterResponse
+        "200": { description: Chapter, content: { application/json: { schema: { $ref: "#/components/schemas/LmsChapter" } } } }
+        "404": { description: Unavailable resource }
+        "409": { description: Stale revision or invalid transition }
+    patch:
+      operationId: editChapter
+      security: [{ bearerAuth: [] }]
+      requestBody: *editBody
+      responses: *chapterResponse
+  /admin/chapters/{chapterId}/lessons:
+    parameters: *chapterParam
+    post:
+      operationId: createLesson
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsCreateLesson" } } }
+      responses:
+        "201": { description: Draft lesson, content: { application/json: { schema: { $ref: "#/components/schemas/LmsLesson" } } } }
+        "400": { description: Invalid restricted Markdown }
+        "409": { description: Stale revision or archived parent }
+  /admin/lessons/{lessonId}:
+    parameters: *lessonParam
+    get:
+      operationId: getAdminLesson
+      security: [{ bearerAuth: [] }]
+      responses: *lessonResponse
+    patch:
+      operationId: editLesson
+      security: [{ bearerAuth: [] }]
+      requestBody: *editBody
+      responses: *lessonResponse
+  /admin/courses/{courseId}/chapter-order:
+    parameters: *courseParam
+    put:
+      operationId: reorderChapters
+      security: [{ bearerAuth: [] }]
+      requestBody: &orderBody
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsOrder" } } }
+      responses: *courseResponse
+  /admin/chapters/{chapterId}/lesson-order:
+    parameters: *chapterParam
+    put:
+      operationId: reorderLessons
+      security: [{ bearerAuth: [] }]
+      requestBody: *orderBody
+      responses: *chapterResponse
+  /admin/students:
+    get:
+      operationId: listAdminStudents
+      security: [{ bearerAuth: [] }]
+      parameters: *paging
+      responses:
+        "200": { description: Existing Students, content: { application/json: { schema: { $ref: "#/components/schemas/LmsStudentPage" } } } }
+        "403": { description: Admin and MFA required }
+  /admin/students/{studentId}:
+    parameters:
+      - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getAdminStudent
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Student summary, content: { application/json: { schema: { $ref: "#/components/schemas/LmsStudent" } } } }
+        "404": { description: Unavailable Student }
+  /admin/enrollments:
+    get:
+      operationId: listAdminEnrollments
+      security: [{ bearerAuth: [] }]
+      parameters: *paging
+      responses: *enrollmentPageResponse
+    post:
+      operationId: enrollStudent
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsEnroll" } } }
+      responses:
+        "201": { description: Granted or existing enrollment, content: { application/json: { schema: { $ref: "#/components/schemas/LmsEnrollment" } } } }
+        "400": { description: Invalid input }
+        "409": { description: Archived course or inactive Student }
+  /admin/enrollments/{enrollmentId}:
+    parameters:
+      - { name: enrollmentId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: changeEnrollment
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LmsEnrollmentChange" } } }
+      responses:
+        "200": { description: Enrollment, content: { application/json: { schema: { $ref: "#/components/schemas/LmsEnrollment" } } } }
+        "409": { description: Cannot activate archived course or inactive Student }
+components:
+  schemas:
+    LmsStatus: { type: string, enum: [draft, published, archived] }
+    LmsRevision:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+    LmsCreateCourse:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 20000 }
+    LmsCreateChapter:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, title]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+    LmsCreateLesson:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, title]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        body: { type: string, maxLength: 100000 }
+        isRequired: { type: boolean, default: true }
+    LmsEdit:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      description: Course permits title/description; chapter title/status; lesson title/body/isRequired/status. Inapplicable fields are rejected.
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 20000 }
+        body: { type: string, maxLength: 100000 }
+        isRequired: { type: boolean }
+        status: { $ref: "#/components/schemas/LmsStatus" }
+    LmsOrder:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, orderedIds]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        orderedIds: { type: array, uniqueItems: true, maxItems: 1000, items: { type: string, format: uuid } }
+    LmsEnroll:
+      type: object
+      additionalProperties: false
+      required: [studentId, courseId]
+      properties:
+        studentId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+    LmsEnrollmentChange:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties: { status: { type: string, enum: [active, revoked] } }
+    LmsProgress:
+      type: object
+      required: [totalRequired, completedRequired, remainingRequired, percentage, isCompleted, continueLessonId]
+      properties:
+        totalRequired: { type: integer }
+        completedRequired: { type: integer }
+        remainingRequired: { type: integer }
+        percentage: { type: number }
+        isCompleted: { type: boolean }
+        continueLessonId: { type: [string, "null"], format: uuid }
+    LmsCompletion:
+      type: object
+      required: [lessonId, completedAt, progress]
+      properties:
+        lessonId: { type: string, format: uuid }
+        completedAt: { type: string, format: date-time }
+        progress: { $ref: "#/components/schemas/LmsProgress" }
+    LmsLesson:
+      type: object
+      required: [id, courseId, chapterId, title, status, isRequired, position]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        chapterId: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string, description: Only detail/editor responses contain body }
+        status: { $ref: "#/components/schemas/LmsStatus" }
+        isRequired: { type: boolean }
+        position: { type: integer }
+        completed: { type: boolean }
+        editRevision: { type: integer }
+        progress: { $ref: "#/components/schemas/LmsProgress" }
+        archivedAt: { type: [string, "null"], format: date-time }
+    LmsChapter:
+      type: object
+      required: [id, courseId, title, status, position, lessons]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/LmsStatus" }
+        position: { type: integer }
+        editRevision: { type: integer }
+        archivedAt: { type: [string, "null"], format: date-time }
+        lessons: { type: array, items: { $ref: "#/components/schemas/LmsLesson" } }
+    LmsCourse:
+      type: object
+      required: [id, slug, title, description, status, editRevision]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/LmsStatus" }
+        editRevision: { type: integer }
+        publishedAt: { type: [string, "null"], format: date-time }
+        archivedAt: { type: [string, "null"], format: date-time }
+        chapters: { type: array, items: { $ref: "#/components/schemas/LmsChapter" } }
+        enrollmentId: { type: string, format: uuid }
+        progress: { $ref: "#/components/schemas/LmsProgress" }
+    LmsStudent:
+      type: object
+      required: [id, displayName, email, status]
+      properties:
+        id: { type: string, format: uuid }
+        displayName: { type: string }
+        email: { type: string }
+        status: { type: string, enum: [active, suspended, deleted] }
+    LmsEnrollment:
+      type: object
+      required: [id, userId, courseId, status, enrolledAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        status: { type: string, enum: [active, revoked, expired] }
+        enrolledAt: { type: string, format: date-time }
+        revokedAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        student: { $ref: "#/components/schemas/LmsStudent" }
+        course: { $ref: "#/components/schemas/LmsCourse" }
+        progress: { $ref: "#/components/schemas/LmsProgress" }
+    LmsCoursePage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LmsCourse" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    LmsStudentPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LmsStudent" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    LmsEnrollmentPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LmsEnrollment" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    LmsStudentDashboard:
+      type: object
+      required: [courses, totalCourses, completedRequired, remainingRequired]
+      properties:
+        courses: { type: array, items: { $ref: "#/components/schemas/LmsCourse" } }
+        totalCourses: { type: integer }
+        completedRequired: { type: integer }
+        remainingRequired: { type: integer }
+    LmsAdminDashboard:
+      type: object
+      required: [totalCourses, draftCourses, publishedCourses, archivedCourses, activeEnrollments, totalStudents]
+      properties:
+        totalCourses: { type: integer }
+        draftCourses: { type: integer }
+        publishedCourses: { type: integer }
+        archivedCourses: { type: integer }
+        activeEnrollments: { type: integer }
+        totalStudents: { type: integer }

@@ -1,0 +1,41 @@
+{
+  "name": "@workspace/saudisensei-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm run build && node --enable-source-maps dist/src/main.js",
+    "build": "pnpm --filter @workspace/saudisensei-runtime-config run build && pnpm --filter @workspace/saudisensei-database run build && tsc -p tsconfig.json",
+    "start": "NODE_ENV=production node --enable-source-maps dist/src/main.js",
+    "worker": "node --enable-source-maps dist/src/media-worker-main.js",
+    "typecheck": "pnpm --filter @workspace/saudisensei-runtime-config run build && tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run build && node --test dist/test/*.test.js"
+  },
+  "dependencies": {
+    "@workspace/saudisensei-runtime-config": "workspace:*",
+    "@aws-sdk/client-s3": "^3.1150.0",
+    "@aws-sdk/s3-request-presigner": "^3.1150.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/throttler": "^6.4.0",
+    "@workspace/saudisensei-database": "workspace:*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "helmet": "^8.1.0",
+    "jose": "^6.1.0",
+    "pdf-lib": "^1.17.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "catalog:",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
+    "typescript": "~5.9.3"
+  }
+}

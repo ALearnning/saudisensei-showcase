@@ -1,0 +1,332 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.2.0
+  description: SaudiSensei authenticated LMS. All Admin operations require application Admin role and signed MFA; Student content requires active enrollment and published ancestors.
+servers:
+  - url: /api
+tags:
+  - name: health
+  - name: identity
+paths:
+  /v1/{scope}/{parentId}/quizzes:
+    $ref: "./assessment-attempts.yaml#/paths/~1{scope}~1{parentId}~1quizzes"
+  /v1/{scope}/{parentId}/quizzes/{quizId}:
+    $ref: "./assessment-attempts.yaml#/paths/~1{scope}~1{parentId}~1quizzes~1{quizId}"
+  /v1/{scope}/{parentId}/quizzes/{quizId}/attempts:
+    $ref: "./assessment-attempts.yaml#/paths/~1{scope}~1{parentId}~1quizzes~1{quizId}~1attempts"
+  /v1/me/assessment-attempts:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts"
+  /v1/me/assessment-attempts/{attemptId}:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}"
+  /v1/me/assessment-attempts/{attemptId}/result:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}~1result"
+  /v1/me/assessment-attempts/{attemptId}/review:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}~1review"
+  /v1/me/assessment-attempts/{attemptId}/answers:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}~1answers"
+  /v1/me/assessment-attempts/{attemptId}/questions/{questionId}/flag:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}~1questions~1{questionId}~1flag"
+  /v1/me/assessment-attempts/{attemptId}/submit:
+    $ref: "./assessment-attempts.yaml#/paths/~1me~1assessment-attempts~1{attemptId}~1submit"
+  /v1/admin/{scope}/{parentId}/quizzes:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/items:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1items"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/preview:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1preview"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/answer-preview:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1answer-preview"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/publish:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1publish"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/unpublish:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1unpublish"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/archive:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1archive"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/revisions:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1revisions"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/revisions/{revisionId}:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1revisions~1{revisionId}"
+  /v1/admin/{scope}/{parentId}/quizzes/{quizId}/revisions/{revisionId}/review-release:
+    $ref: "./quiz-composition.yaml#/paths/~1admin~1{scope}~1{parentId}~1quizzes~1{quizId}~1revisions~1{revisionId}~1review-release"
+  /v1/admin/question-bank/questions:
+    $ref: "./question-bank.yaml#/paths/~1admin~1question-bank~1questions"
+  /v1/admin/question-bank/questions/{questionId}:
+    $ref: "./question-bank.yaml#/paths/~1admin~1question-bank~1questions~1{questionId}"
+  /v1/admin/question-bank/questions/{questionId}/revisions:
+    $ref: "./question-bank.yaml#/paths/~1admin~1question-bank~1questions~1{questionId}~1revisions"
+  /v1/admin/question-bank/questions/{questionId}/revisions/{revisionId}:
+    $ref: "./question-bank.yaml#/paths/~1admin~1question-bank~1questions~1{questionId}~1revisions~1{revisionId}"
+  /v1/admin/question-bank/questions/{questionId}/archive:
+    $ref: "./question-bank.yaml#/paths/~1admin~1question-bank~1questions~1{questionId}~1archive"
+  /v1/admin/skills:
+    $ref: "./question-bank.yaml#/paths/~1admin~1skills"
+  /v1/admin/skills/{skillId}:
+    $ref: "./question-bank.yaml#/paths/~1admin~1skills~1{skillId}"
+  /v1/admin/skills/{skillId}/move:
+    $ref: "./question-bank.yaml#/paths/~1admin~1skills~1{skillId}~1move"
+  /v1/admin/skills/{skillId}/archive:
+    $ref: "./question-bank.yaml#/paths/~1admin~1skills~1{skillId}~1archive"
+  /v1/{scope}/{parentId}/media-library/placements/{placementId}/playback:
+    $ref: "./media-renditions.yaml#/paths/~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1playback"
+  /v1/admin/{scope}/{parentId}/media-library/placements/{placementId}/video-preview:
+    $ref: "./media-renditions.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1video-preview"
+  /v1/admin/{scope}/{parentId}/media-library/placements/{placementId}/access:
+    $ref: "./media-renditions.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1access"
+  /v1/{scope}/{parentId}/media-library/placements/{placementId}/access:
+    $ref: "./media-renditions.yaml#/paths/~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1access"
+  /v1/admin/{scope}/{parentId}/media-library/placements/{placementId}/content:
+    $ref: "./media-renditions.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1content"
+  /v1/{scope}/{parentId}/media-library/placements/{placementId}/content:
+    $ref: "./media-renditions.yaml#/paths/~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1content"
+  /v1/admin/{scope}/{parentId}/media-library/revisions/{revisionId}/processing:
+    $ref: "./media-processing.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1revisions~1{revisionId}~1processing"
+  /v1/admin/{scope}/{parentId}/media-library/revisions/{revisionId}/processing/upload:
+    $ref: "./media-processing.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1revisions~1{revisionId}~1processing~1upload"
+  /v1/admin/{scope}/{parentId}/media-library/revisions/{revisionId}/processing/parts:
+    $ref: "./media-processing.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1revisions~1{revisionId}~1processing~1parts"
+  /v1/admin/{scope}/{parentId}/media-library/revisions/{revisionId}/processing/complete:
+    $ref: "./media-processing.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1revisions~1{revisionId}~1processing~1complete"
+  /v1/admin/{scope}/{parentId}/media-library:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library"
+  /v1/{scope}/{parentId}/media-library:
+    $ref: "./media-library.yaml#/paths/~1{scope}~1{parentId}~1media-library"
+  /v1/admin/{scope}/{parentId}/media-library/assets:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1assets"
+  /v1/admin/{scope}/{parentId}/media-library/assets/{assetId}:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1assets~1{assetId}"
+  /v1/admin/{scope}/{parentId}/media-library/assets/{assetId}/revisions:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1assets~1{assetId}~1revisions"
+  /v1/admin/{scope}/{parentId}/media-library/assets/{assetId}/activate:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1assets~1{assetId}~1activate"
+  /v1/admin/{scope}/{parentId}/media-library/assets/{assetId}/lifecycle:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1assets~1{assetId}~1lifecycle"
+  /v1/admin/{scope}/{parentId}/media-library/placements:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements"
+  /v1/admin/{scope}/{parentId}/media-library/placements/{placementId}:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements~1{placementId}"
+  /v1/admin/{scope}/{parentId}/media-library/placements/{placementId}/lifecycle:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placements~1{placementId}~1lifecycle"
+  /v1/admin/{scope}/{parentId}/media-library/placement-order:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1placement-order"
+  /v1/admin/{scope}/{parentId}/media-library/collections:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1collections"
+  /v1/admin/{scope}/{parentId}/media-library/collections/{collectionId}:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1collections~1{collectionId}"
+  /v1/admin/{scope}/{parentId}/media-library/collections/{collectionId}/lifecycle:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1collections~1{collectionId}~1lifecycle"
+  /v1/admin/{scope}/{parentId}/media-library/collection-order:
+    $ref: "./media-library.yaml#/paths/~1admin~1{scope}~1{parentId}~1media-library~1collection-order"
+  /v1/admin/video-pilot/{assetId}/attach:
+    $ref: "./media.yaml#/paths/~1admin~1video-pilot~1{assetId}~1attach"
+  /v1/lessons/{lessonId}/video-pilot:
+    $ref: "./media.yaml#/paths/~1lessons~1{lessonId}~1video-pilot"
+  /v1/video-pilot/{assetId}/playback:
+    $ref: "./media.yaml#/paths/~1video-pilot~1{assetId}~1playback"
+  /v1/admin/lessons/{lessonId}/media:
+    $ref: "./media.yaml#/paths/~1admin~1lessons~1{lessonId}~1media"
+  /v1/admin/lessons/{lessonId}/media/uploads:
+    $ref: "./media.yaml#/paths/~1admin~1lessons~1{lessonId}~1media~1uploads"
+  /v1/admin/media/uploads/{sessionId}/parts:
+    $ref: "./media.yaml#/paths/~1admin~1media~1uploads~1{sessionId}~1parts"
+  /v1/admin/media/uploads/{sessionId}/complete:
+    $ref: "./media.yaml#/paths/~1admin~1media~1uploads~1{sessionId}~1complete"
+  /v1/admin/media/{assetId}/scan:
+    $ref: "./media.yaml#/paths/~1admin~1media~1{assetId}~1scan"
+  /v1/admin/media/{assetId}/publish:
+    $ref: "./media.yaml#/paths/~1admin~1media~1{assetId}~1publish"
+  /v1/lessons/{lessonId}/media:
+    $ref: "./media.yaml#/paths/~1lessons~1{lessonId}~1media"
+  /v1/media/{assetId}/access:
+    $ref: "./media.yaml#/paths/~1media~1{assetId}~1access"
+  /v1/courses:
+    $ref: "./lms.yaml#/paths/~1courses"
+  /v1/courses/{courseId}:
+    $ref: "./lms.yaml#/paths/~1courses~1{courseId}"
+  /v1/me/enrollments:
+    $ref: "./lms.yaml#/paths/~1me~1enrollments"
+  /v1/me/courses/{courseId}/progress:
+    $ref: "./lms.yaml#/paths/~1me~1courses~1{courseId}~1progress"
+  /v1/me/dashboard:
+    $ref: "./lms.yaml#/paths/~1me~1dashboard"
+  /v1/lessons/{lessonId}:
+    $ref: "./lms.yaml#/paths/~1lessons~1{lessonId}"
+  /v1/me/lessons/{lessonId}/completion:
+    $ref: "./lms.yaml#/paths/~1me~1lessons~1{lessonId}~1completion"
+  /v1/admin/dashboard:
+    $ref: "./lms.yaml#/paths/~1admin~1dashboard"
+  /v1/admin/courses:
+    $ref: "./lms.yaml#/paths/~1admin~1courses"
+  /v1/admin/courses/{courseId}:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}"
+  /v1/admin/courses/{courseId}/publish:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}~1publish"
+  /v1/admin/courses/{courseId}/unpublish:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}~1unpublish"
+  /v1/admin/courses/{courseId}/archive:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}~1archive"
+  /v1/admin/courses/{courseId}/chapters:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}~1chapters"
+  /v1/admin/chapters/{chapterId}:
+    $ref: "./lms.yaml#/paths/~1admin~1chapters~1{chapterId}"
+  /v1/admin/chapters/{chapterId}/lessons:
+    $ref: "./lms.yaml#/paths/~1admin~1chapters~1{chapterId}~1lessons"
+  /v1/admin/lessons/{lessonId}:
+    $ref: "./lms.yaml#/paths/~1admin~1lessons~1{lessonId}"
+  /v1/admin/courses/{courseId}/chapter-order:
+    $ref: "./lms.yaml#/paths/~1admin~1courses~1{courseId}~1chapter-order"
+  /v1/admin/chapters/{chapterId}/lesson-order:
+    $ref: "./lms.yaml#/paths/~1admin~1chapters~1{chapterId}~1lesson-order"
+  /v1/admin/students:
+    $ref: "./lms.yaml#/paths/~1admin~1students"
+  /v1/admin/students/{studentId}:
+    $ref: "./lms.yaml#/paths/~1admin~1students~1{studentId}"
+  /v1/admin/enrollments:
+    $ref: "./lms.yaml#/paths/~1admin~1enrollments"
+  /v1/admin/enrollments/{enrollmentId}:
+    $ref: "./lms.yaml#/paths/~1admin~1enrollments~1{enrollmentId}"
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      responses:
+        "200":
+          description: Live
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /v1/health:
+    get:
+      operationId: getFoundationHealth
+      tags: [health]
+      responses:
+        "200":
+          description: Foundation readiness without secret values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationHealth"
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      tags: [identity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Application profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401": { description: Invalid or missing authentication }
+        "403": { description: Unverified identity or inactive account }
+        "503": { description: Identity service unavailable or unconfigured }
+    patch:
+      operationId: updateCurrentUser
+      tags: [identity]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated permitted profile fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400": { description: "Invalid input, including client-supplied roles/status/identity" }
+        "401": { description: Unauthenticated }
+        "403": { description: Inactive account }
+  /v1/student/protected:
+    get:
+      operationId: getStudentProtected
+      tags: [identity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Student authorization confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtectedPage"
+        "401": { description: Unauthenticated }
+        "403": { description: Forbidden }
+  /v1/admin/protected:
+    get:
+      operationId: getAdminProtected
+      tags: [identity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Admin authorization confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtectedPage"
+        "401": { description: Unauthenticated }
+        "403": { description: Forbidden }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AssessmentQuizPolicy:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy"
+    AssessmentAnswer:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentAnswer"
+    AssessmentStudentQuestion:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentStudentQuestion"
+    AssessmentAnswerState:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentAnswerState"
+    AssessmentReviewFlag:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentReviewFlag"
+    AssessmentEvidenceContext:
+      $ref: "./assessments.yaml#/components/schemas/AssessmentEvidenceContext"
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    FoundationHealth:
+      type: object
+      required: [status, database, authentication, phase]
+      properties:
+        status: { type: string }
+        database: { type: string, enum: [ready, unavailable] }
+        authentication: { type: string, enum: [configured, configuration_required] }
+        phase: { type: string, enum: ["1A", "1B"] }
+    UserProfile:
+      type: object
+      required: [id, email, displayName, status, preferredLocale, roles]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        displayName: { type: string }
+        status: { type: string, enum: [active, suspended, deleted] }
+        preferredLocale: { type: string, enum: [ar, en] }
+        roles:
+          type: array
+          items: { type: string, enum: [student, admin] }
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 120 }
+        preferredLocale: { type: string, enum: [ar, en] }
+    ProtectedPage:
+      type: object
+      required: [area, user]
+      properties:
+        area: { type: string, enum: [student, admin] }
+        user:
+          $ref: "#/components/schemas/UserProfile"

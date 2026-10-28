@@ -1,0 +1,493 @@
+openapi: 3.1.0
+info:
+  title: Student assessment attempts
+  version: 0.1.0
+  description: Q5 Student-owned attempts and Q6 visibility-filtered results and review. Current authorization is rechecked on every request.
+paths:
+  /{scope}/{parentId}/quizzes:
+    parameters: &parent
+      - { $ref: "#/components/parameters/StudentAssessmentScope" }
+      - { $ref: "#/components/parameters/StudentAssessmentParentId" }
+    get:
+      operationId: studentQuizList
+      security: [{ bearerAuth: [] }]
+      parameters: &list
+        - { $ref: "#/components/parameters/StudentAssessmentLocale" }
+        - { $ref: "#/components/parameters/StudentAssessmentPageSize" }
+        - { $ref: "#/components/parameters/StudentAssessmentCursor" }
+      responses:
+        "200": { description: Published eligible quizzes without questions, content: { application/json: { schema: { $ref: "#/components/schemas/StudentQuizPage" } } } }
+        "400": &invalid { $ref: "#/components/responses/StudentAssessmentInvalid" }
+        "401": &unauthenticated { $ref: "#/components/responses/StudentAssessmentUnauthenticated" }
+        "403": &forbidden { $ref: "#/components/responses/StudentAssessmentForbidden" }
+        "404": &notfound { $ref: "#/components/responses/StudentAssessmentNotFound" }
+        "429": &limited { $ref: "#/components/responses/StudentAssessmentLimited" }
+  /{scope}/{parentId}/quizzes/{quizId}:
+    parameters: &quiz
+      - { $ref: "#/components/parameters/StudentAssessmentScope" }
+      - { $ref: "#/components/parameters/StudentAssessmentParentId" }
+      - { $ref: "#/components/parameters/StudentAssessmentQuizId" }
+    get:
+      operationId: studentQuizGet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/StudentAssessmentLocale" }
+      responses:
+        "200": { description: Safe quiz instructions and availability without questions, content: { application/json: { schema: { $ref: "#/components/schemas/StudentQuiz" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "429": *limited
+  /{scope}/{parentId}/quizzes/{quizId}/attempts:
+    parameters: *quiz
+    post:
+      operationId: studentAttemptStart
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StudentAttemptStartInput" } } }
+      responses:
+        "201": { description: "Stable start receipt, replayed unchanged after authorization; fetch the owned attempt separately for its current view", content: { application/json: { schema: { $ref: "#/components/schemas/StudentStartReceipt" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": &conflict { $ref: "#/components/responses/StudentAssessmentConflict" }
+        "429": *limited
+  /me/assessment-attempts:
+    get:
+      operationId: studentAttemptHistory
+      security: [{ bearerAuth: [] }]
+      parameters: *list
+      responses:
+        "200": { description: Student-owned safe attempt history, content: { application/json: { schema: { $ref: "#/components/schemas/StudentAttemptPage" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "429": *limited
+  /me/assessment-attempts/{attemptId}:
+    parameters: &attempt
+      - { $ref: "#/components/parameters/StudentAssessmentAttemptId" }
+    get:
+      operationId: studentAttemptGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Editable active view or distinct finalized metadata without working answers, content: { application/json: { schema: { $ref: "#/components/schemas/StudentAttemptView" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "429": *limited
+  /me/assessment-attempts/{attemptId}/answers:
+    parameters: *attempt
+    put:
+      operationId: studentAttemptSaveAnswers
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StudentAnswerSaveInput" } } }
+      responses:
+        "200": { description: Atomic acknowledged answer revisions without correctness, content: { application/json: { schema: { $ref: "#/components/schemas/StudentSaveReceipt" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+        "429": *limited
+  /me/assessment-attempts/{attemptId}/questions/{questionId}/flag:
+    parameters:
+      - { $ref: "#/components/parameters/StudentAssessmentAttemptId" }
+      - { name: questionId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: studentAttemptSetFlag
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StudentFlagInput" } } }
+      responses:
+        "200": { description: Independent persisted review flag acknowledgement, content: { application/json: { schema: { $ref: "#/components/schemas/StudentFlagReceipt" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+        "429": *limited
+  /me/assessment-attempts/{attemptId}/submit:
+    parameters: *attempt
+    post:
+      operationId: studentAttemptSubmit
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StudentSubmitInput" } } }
+      responses:
+        "201": { description: Canonical frozen submission acknowledgement without grading, content: { application/json: { schema: { $ref: "#/components/schemas/StudentSubmissionReceipt" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+        "429": *limited
+  /me/assessment-attempts/{attemptId}/result:
+    parameters: *attempt
+    get:
+      operationId: studentAttemptResult
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Processing state or independently visibility-filtered score; never answer keys, content: { application/json: { schema: { $ref: "#/components/schemas/StudentAttemptResult" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+        "429": *limited
+  /me/assessment-attempts/{attemptId}/review:
+    parameters: *attempt
+    get:
+      operationId: studentAttemptReview
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Separately authorized typed review of the frozen attempt, content: { application/json: { schema: { $ref: "#/components/schemas/StudentAttemptReview" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+        "429": *limited
+components:
+  parameters:
+    StudentAssessmentScope:
+      name: scope
+      in: path
+      required: true
+      schema: { type: string, enum: [courses, chapters, lessons] }
+    StudentAssessmentParentId:
+      name: parentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StudentAssessmentQuizId:
+      name: quizId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StudentAssessmentAttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StudentAssessmentLocale:
+      name: locale
+      in: query
+      schema: { type: string, enum: [ar, en], default: ar }
+    StudentAssessmentPageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    StudentAssessmentCursor:
+      name: cursor
+      in: query
+      schema: { type: string, format: uuid }
+  responses:
+    StudentAssessmentInvalid:
+      description: Invalid bounded Student payload.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+    StudentAssessmentUnauthenticated:
+      description: Authentication required.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+    StudentAssessmentForbidden:
+      description: Verified active Student account and current enrollment required.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+    StudentAssessmentNotFound:
+      description: Non-enumerating inaccessible attempt, quiz or ancestry.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+    StudentAssessmentConflict:
+      description: ANSWER_CHANGED, FLAG_CHANGED, IDEMPOTENCY_CONFLICT, or unavailable attempt state/window/allowance. No batch partially commits.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+    StudentAssessmentLimited:
+      description: Identity-aware assessment budget exceeded.
+      content: { application/json: { schema: { $ref: "#/components/schemas/StudentAssessmentError" } } }
+  schemas:
+    StudentAssessmentError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, pattern: "^[A-Z0-9_]{1,64}$" }
+        requestId: { type: string }
+    StudentAttemptStartInput:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId, requestedContentLocale]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        requestedContentLocale: { type: string, enum: [ar, en] }
+    StudentStartReceipt:
+      description: Immutable small receipt identifying the allocated or existing attempt. Never includes mutable working state or presentation; use GET /me/assessment-attempts/{attemptId}.
+      type: object
+      additionalProperties: false
+      required: [attemptId]
+      properties:
+        attemptId: { type: string, format: uuid }
+    StudentAnswerChange:
+      type: object
+      additionalProperties: false
+      required: [attemptQuestionId, expectedAnswerRevision, answer]
+      properties:
+        attemptQuestionId: { type: string, format: uuid }
+        expectedAnswerRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        answer:
+          anyOf:
+            - { $ref: "./assessments.yaml#/components/schemas/AssessmentAnswer" }
+            - { type: "null" }
+    StudentAnswerSaveInput:
+      description: Duplicate attemptQuestionIds rejected by server; all changes commit atomically.
+      type: object
+      additionalProperties: false
+      required: [clientMutationId, changes]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: "#/components/schemas/StudentAnswerChange" }
+    StudentSubmitInput:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        changes:
+          type: array
+          maxItems: 10
+          default: []
+          items: { $ref: "#/components/schemas/StudentAnswerChange" }
+    StudentFlagInput:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId, expectedFlagRevision, isFlagged]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        expectedFlagRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        isFlagged: { type: boolean }
+    StudentQuiz:
+      description: Safe published instructions and policy only. No questions before start.
+      type: object
+      additionalProperties: false
+      required: [quizId, courseId, parentType, parentId, locale, title, instructions, policy, attemptsUsed, attemptsRemaining, resumableAttemptId, canStart, serverNow]
+      properties:
+        quizId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        parentType: { type: string, enum: [course, chapter, lesson] }
+        parentId: { type: string, format: uuid }
+        locale: { type: string, enum: [ar, en] }
+        title: { type: string }
+        instructions: { type: string }
+        policy: { $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy" }
+        attemptsUsed: { type: integer, minimum: 0 }
+        attemptsRemaining: { type: [integer, "null"], minimum: 0 }
+        resumableAttemptId: { type: [string, "null"], format: uuid }
+        canStart: { type: boolean }
+        serverNow: { type: string, format: date-time }
+    StudentQuizPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/StudentQuiz" }
+        nextCursor: { type: [string, "null"], format: uuid }
+    StudentActiveAttempt:
+      description: Fixed safe presentation and acknowledged working state; only IN_PROGRESS.
+      type: object
+      additionalProperties: false
+      required: [attemptId, quizId, quizRevisionId, state, attemptNumber, selectedContentLocale, serverNow, startedAt, deadlineAt, deadlineReason, opensAt, closesAt, timeLimitSeconds, locale, title, instructions, policy, questions, answers, flags]
+      properties:
+        attemptId: { type: string, format: uuid }
+        quizId: { type: string, format: uuid }
+        quizRevisionId: { type: string, format: uuid }
+        attemptNumber: { type: integer, minimum: 1 }
+        selectedContentLocale: { type: string, enum: [ar, en] }
+        serverNow: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        deadlineAt: { type: [string, "null"], format: date-time }
+        deadlineReason: { type: [string, "null"], enum: [time_limit, availability_close, both, null] }
+        opensAt: { type: [string, "null"], format: date-time }
+        closesAt: { type: [string, "null"], format: date-time }
+        timeLimitSeconds: { type: [integer, "null"], minimum: 60, maximum: 10800 }
+        state: { type: string, enum: [IN_PROGRESS] }
+        locale: { type: string, enum: [ar, en] }
+        title: { type: string }
+        instructions: { type: string }
+        policy: { $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy" }
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "./assessments.yaml#/components/schemas/AssessmentStudentQuestion" }
+        answers:
+          type: array
+          maxItems: 100
+          items: { $ref: "./assessments.yaml#/components/schemas/AssessmentAnswerState" }
+        flags:
+          type: array
+          maxItems: 100
+          items: { $ref: "./assessments.yaml#/components/schemas/AssessmentReviewFlag" }
+    StudentSubmissionReceipt:
+      description: Finalized metadata only; never an editable resume view, result or review.
+      type: object
+      additionalProperties: false
+      required: [attemptId, quizId, state, submittedAt, effectiveSubmittedAt, finalizationReason, processing]
+      properties:
+        attemptId: { type: string, format: uuid }
+        quizId: { type: string, format: uuid }
+        state: { type: string, enum: [SUBMITTED, AUTO_SUBMITTED, GRADED] }
+        submittedAt: { type: string, format: date-time }
+        effectiveSubmittedAt: { type: string, format: date-time }
+        finalizationReason: { type: string, enum: [voluntary, time_limit, availability_close, both] }
+        processing: { type: string, enum: [pending, ready] }
+    StudentAttemptView:
+      oneOf:
+        - { $ref: "#/components/schemas/StudentActiveAttempt" }
+        - { $ref: "#/components/schemas/StudentSubmissionReceipt" }
+      discriminator: { propertyName: state }
+    StudentAttemptSummary:
+      type: object
+      additionalProperties: false
+      required: [attemptId, quizId, quizRevisionId, state, attemptNumber, selectedContentLocale, serverNow, startedAt, deadlineAt, deadlineReason, opensAt, closesAt, timeLimitSeconds, submittedAt]
+      properties:
+        attemptId: { type: string, format: uuid }
+        quizId: { type: string, format: uuid }
+        quizRevisionId: { type: string, format: uuid }
+        state: { $ref: "./assessments.yaml#/components/schemas/AssessmentAttemptState" }
+        attemptNumber: { type: integer, minimum: 1 }
+        selectedContentLocale: { type: string, enum: [ar, en] }
+        serverNow: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        deadlineAt: { type: [string, "null"], format: date-time }
+        deadlineReason: { type: [string, "null"], enum: [time_limit, availability_close, both, null] }
+        opensAt: { type: [string, "null"], format: date-time }
+        closesAt: { type: [string, "null"], format: date-time }
+        timeLimitSeconds: { type: [integer, "null"], minimum: 60, maximum: 10800 }
+        submittedAt: { type: [string, "null"], format: date-time }
+    StudentAttemptPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/StudentAttemptSummary" }
+        nextCursor: { type: [string, "null"], format: uuid }
+    StudentAnswerAcknowledgement:
+      type: object
+      additionalProperties: false
+      required: [attemptQuestionId, answerRevision]
+      properties:
+        attemptQuestionId: { type: string, format: uuid }
+        answerRevision: { type: integer, minimum: 0 }
+    StudentSaveReceipt:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId, attemptId, state, serverNow, savedAt, deadlineAt, answers]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [IN_PROGRESS] }
+        serverNow: { type: string, format: date-time }
+        savedAt: { type: string, format: date-time }
+        deadlineAt: { type: [string, "null"], format: date-time }
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: "#/components/schemas/StudentAnswerAcknowledgement" }
+    StudentFlagReceipt:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId, attemptId, state, serverNow, savedAt, deadlineAt, attemptQuestionId, isFlagged, flagRevision]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [IN_PROGRESS] }
+        serverNow: { type: string, format: date-time }
+        savedAt: { type: string, format: date-time }
+        deadlineAt: { type: [string, "null"], format: date-time }
+        attemptQuestionId: { type: string, format: uuid }
+        isFlagged: { type: boolean }
+        flagRevision: { type: integer, minimum: 0 }
+    StudentAttemptResult:
+      oneOf:
+        - { $ref: "#/components/schemas/StudentResultProcessing" }
+        - { $ref: "#/components/schemas/StudentResultWithheld" }
+        - { $ref: "#/components/schemas/StudentResultAvailable" }
+      discriminator: { propertyName: status }
+    StudentResultProcessing:
+      type: object
+      additionalProperties: false
+      required: [attemptId, state, status, processingCode]
+      properties:
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [SUBMITTED, AUTO_SUBMITTED] }
+        status: { type: string, enum: [processing] }
+        processingCode: { type: string, enum: [GRADING_PENDING] }
+    StudentResultWithheld:
+      type: object
+      additionalProperties: false
+      required: [attemptId, state, status]
+      properties:
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [GRADED] }
+        status: { type: string, enum: [withheld] }
+    StudentResultAvailable:
+      type: object
+      additionalProperties: false
+      required: [attemptId, state, status, earnedPoints, possiblePoints, passed]
+      properties:
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [GRADED] }
+        status: { type: string, enum: [available] }
+        earnedPoints: { type: integer, minimum: 0, maximum: 100000 }
+        possiblePoints: { type: integer, minimum: 1, maximum: 100000 }
+        passed: { type: boolean }
+    StudentAttemptReview:
+      description: Review requires both score and review release under the exact historical revision. Explanation additionally requires explanation release. Attempt-limit release requires a finite exhausted lifetime allowance and no IN_PROGRESS attempt for the Student and Quiz. No grading definitions or evidence are serialized.
+      type: object
+      additionalProperties: false
+      required: [attemptId, state, questions]
+      properties:
+        attemptId: { type: string, format: uuid }
+        state: { type: string, enum: [GRADED] }
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/StudentQuestionReview" }
+    StudentQuestionReview:
+      type: object
+      additionalProperties: false
+      required: [question, answer, correct, earnedPoints, possiblePoints, correctAnswer]
+      properties:
+        question: { $ref: "./assessments.yaml#/components/schemas/AssessmentStudentQuestion" }
+        answer:
+          oneOf:
+            - { $ref: "./assessments.yaml#/components/schemas/AssessmentAnswer" }
+            - { type: "null" }
+        correct:
+          description: Null means no final accepted answer, not answered incorrectly.
+          type: [boolean, "null"]
+        earnedPoints: { type: integer, minimum: 0, maximum: 1000 }
+        possiblePoints: { type: integer, minimum: 1, maximum: 1000 }
+        correctAnswer:
+          description: Typed correct answer presentation; short text gives one authored example in the pinned locale, never the private variants or normalizer.
+          $ref: "./assessments.yaml#/components/schemas/AssessmentAnswer"
+        explanation:
+          description: Present only when both review and explanation visibility permit it.
+          type: string
+          maxLength: 20000

@@ -1,0 +1,494 @@
+openapi: 3.1.0
+info:
+  title: Admin quiz composition
+  version: 0.1.0
+  description: Q4 Admin + genuine signed MFA only. No Student routes, attempts, grading execution or progress writes. Cross-field policy, localization, ancestry and immutable revision eligibility are revalidated by the server.
+paths:
+  /admin/{scope}/{parentId}/quizzes:
+    parameters: &parent
+      - { $ref: "#/components/parameters/AdminQuizScope" }
+      - { $ref: "#/components/parameters/AdminQuizParentId" }
+    get:
+      operationId: adminQuizList
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/AdminQuizPage" }
+        - { $ref: "#/components/parameters/AdminQuizPageSize" }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/AdminQuizStatus" } }
+        - { name: mode, in: query, schema: { type: string, enum: [practice, graded] } }
+        - { name: required, in: query, schema: { type: string, enum: ["true", "false"] } }
+        - { name: locale, in: query, schema: { type: string, enum: [ar, en] } }
+      responses:
+        "200": { description: Bounded parent-owned quiz list, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizPage" } } } }
+        "400": &invalid { $ref: "#/components/responses/AdminQuizInvalid" }
+        "401": &unauthenticated { $ref: "#/components/responses/AdminQuizUnauthenticated" }
+        "403": &forbidden { $ref: "#/components/responses/AdminQuizForbidden" }
+        "404": &notfound { $ref: "#/components/responses/AdminQuizNotFound" }
+    post:
+      operationId: adminQuizCreate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizCreateInput" } } }
+      responses:
+        "201": &detail { description: Private Admin quiz draft and identity, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizDetail" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": &conflict { $ref: "#/components/responses/AdminQuizConflict" }
+  /admin/{scope}/{parentId}/quizzes/{quizId}:
+    parameters: &quiz
+      - { $ref: "#/components/parameters/AdminQuizScope" }
+      - { $ref: "#/components/parameters/AdminQuizParentId" }
+      - { $ref: "#/components/parameters/AdminQuizId" }
+    get:
+      operationId: adminQuizGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": *detail
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+    patch:
+      operationId: adminQuizEdit
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizEditInput" } } }
+      responses:
+        "200": *detail
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/items:
+    parameters: *quiz
+    put:
+      operationId: adminQuizReplaceItems
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizItemsInput" } } }
+      responses:
+        "200": *detail
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/preview:
+    parameters: *quiz
+    post:
+      operationId: adminQuizPreview
+      security: [{ bearerAuth: [] }]
+      requestBody: &previewInput
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizPreviewInput" } } }
+      responses:
+        "201": { description: Student-safe selected-locale presentation only; does not create an attempt, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizSafePreview" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/answer-preview:
+    parameters: *quiz
+    post:
+      operationId: adminQuizAnswerPreview
+      security: [{ bearerAuth: [] }]
+      requestBody: *previewInput
+      responses:
+        "201": { description: Separate private Admin answer projection; never a Student DTO, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizAnswerPreview" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/publish:
+    parameters: *quiz
+    post:
+      operationId: adminQuizPublish
+      security: [{ bearerAuth: [] }]
+      requestBody: &mutationInput
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizMutationInput" } } }
+      responses:
+        "201": { description: Atomically sealed publication; previous immutable revisions retained, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizPublishResult" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/unpublish:
+    parameters: *quiz
+    post:
+      operationId: adminQuizUnpublish
+      security: [{ bearerAuth: [] }]
+      requestBody: *mutationInput
+      responses:
+        "201": *detail
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/archive:
+    parameters: *quiz
+    post:
+      operationId: adminQuizArchive
+      security: [{ bearerAuth: [] }]
+      requestBody: *mutationInput
+      responses:
+        "201": *detail
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+  /admin/{scope}/{parentId}/quizzes/{quizId}/revisions:
+    parameters: *quiz
+    get:
+      operationId: adminQuizRevisionList
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/AdminQuizPage" }
+        - { $ref: "#/components/parameters/AdminQuizPageSize" }
+      responses:
+        "200": { description: Immutable publication history, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizRevisionPage" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+  /admin/{scope}/{parentId}/quizzes/{quizId}/revisions/{revisionId}:
+    parameters: &revision
+      - { $ref: "#/components/parameters/AdminQuizScope" }
+      - { $ref: "#/components/parameters/AdminQuizParentId" }
+      - { $ref: "#/components/parameters/AdminQuizId" }
+      - { $ref: "#/components/parameters/AdminQuizRevisionId" }
+    get:
+      operationId: adminQuizRevisionGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Exact owned immutable quiz revision, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizRevision" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+  /admin/{scope}/{parentId}/quizzes/{quizId}/revisions/{revisionId}/review-release:
+    parameters: *revision
+    post:
+      operationId: adminQuizReviewRelease
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizReleaseInput" } } }
+      responses:
+        "201": { description: Idempotent irreversible audited exact-revision review release, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizReviewRelease" } } } }
+        "400": *invalid
+        "401": *unauthenticated
+        "403": *forbidden
+        "404": *notfound
+        "409": *conflict
+components:
+  parameters:
+    AdminQuizScope:
+      name: scope
+      in: path
+      required: true
+      schema: { type: string, enum: [courses, chapters, lessons] }
+    AdminQuizParentId:
+      name: parentId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 64, pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" }
+    AdminQuizId:
+      name: quizId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AdminQuizRevisionId:
+      name: revisionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AdminQuizPage:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100000, default: 1 }
+    AdminQuizPageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+  responses:
+    AdminQuizInvalid:
+      description: Invalid composition, policy, locale, selection or query
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizError" } } }
+    AdminQuizUnauthenticated:
+      description: Authenticated identity required
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizError" } } }
+    AdminQuizForbidden:
+      description: Verified active local Admin and genuine signed MFA required
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizError" } } }
+    AdminQuizNotFound:
+      description: Parent, owned quiz or exact owned revision not found
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizError" } } }
+    AdminQuizConflict:
+      description: Stale edit revision, archived parent/quiz, invalid lifecycle or publication conflict
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuizError" } } }
+  schemas:
+    AdminQuizError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, pattern: "^[A-Z0-9_]{1,64}$" }
+        requestId: { type: string, maxLength: 80 }
+    AdminQuizStatus:
+      type: string
+      enum: [draft, published, archived]
+    AdminQuizLocalizedContent:
+      type: object
+      additionalProperties: false
+      required: [title, instructions]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        instructions: { type: string, maxLength: 20000 }
+    AdminQuizContent:
+      description: At least the selected default locale must be authored; Arabic-only, English-only and bilingual are supported. Restricted Markdown and byte budget checked server-side.
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        ar: { $ref: "#/components/schemas/AdminQuizLocalizedContent" }
+        en: { $ref: "#/components/schemas/AdminQuizLocalizedContent" }
+    AdminQuizPolicyInput:
+      description: Omitted fields receive mode defaults; explicit false/null preserved. Practice defaults to unlimited attempts and after-grading review, graded to one attempt and manual review. Both default optional, untimed, 70% pass, no shuffle or AI. Availability and visibility cross-field constraints validated server-side. Authoring rejects review earlier than score and explanation earlier than review. A dependent visibility must be never, match its prerequisite, or follow an after_grading prerequisite; manual_release and after_attempt_limit are independent conditions.
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        version: { type: integer, enum: [1], default: 1 }
+        mode: { type: string, enum: [practice, graded] }
+        required: { type: boolean, default: false }
+        passBasisPoints: { type: integer, minimum: 0, maximum: 10000, default: 7000 }
+        maxAttempts: { type: [integer, "null"], minimum: 1, maximum: 2147483647 }
+        timeLimitSeconds: { type: [integer, "null"], minimum: 60, maximum: 10800 }
+        opensAt: { type: [string, "null"], format: date-time }
+        closesAt: { type: [string, "null"], format: date-time }
+        shuffleQuestions: { type: boolean, default: false }
+        shuffleOptions: { type: boolean, default: false }
+        scoreVisibility: { $ref: "./assessments.yaml#/components/schemas/AssessmentVisibility" }
+        reviewVisibility: { $ref: "./assessments.yaml#/components/schemas/AssessmentVisibility" }
+        explanationVisibility: { $ref: "./assessments.yaml#/components/schemas/AssessmentVisibility" }
+        aiAnalysisEnabled: { type: boolean, default: false }
+    AdminQuizDraftInput:
+      type: object
+      additionalProperties: false
+      required: [defaultContentLocale, content, policy]
+      properties:
+        defaultContentLocale: { type: string, enum: [ar, en] }
+        content: { $ref: "#/components/schemas/AdminQuizContent" }
+        policy: { $ref: "#/components/schemas/AdminQuizPolicyInput" }
+    AdminQuizCreateInput:
+      type: object
+      additionalProperties: false
+      required: [draft]
+      properties:
+        draft: { $ref: "#/components/schemas/AdminQuizDraftInput" }
+    AdminQuizEditInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, draft]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        draft: { $ref: "#/components/schemas/AdminQuizDraftInput" }
+    AdminQuizMutationInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+    AdminQuizItemInput:
+      description: Exact sealed QuestionRevision; never latest. Omitted points use the selected revision default. Unique question lineage and contiguous positions validated server-side.
+      type: object
+      additionalProperties: false
+      required: [questionId, questionRevisionId, position]
+      properties:
+        questionId: { type: string, format: uuid }
+        questionRevisionId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0, maximum: 99 }
+        points: { type: integer, minimum: 1, maximum: 1000 }
+    AdminQuizItemsInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, items]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AdminQuizItemInput" } }
+    AdminQuizPreviewInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, locale]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        locale: { type: string, enum: [ar, en] }
+    AdminQuizReleaseInput:
+      type: object
+      additionalProperties: false
+      required: [clientMutationId]
+      properties:
+        clientMutationId: { type: string, format: uuid }
+    AdminQuizDraft:
+      type: object
+      additionalProperties: false
+      required: [defaultContentLocale, content, policy]
+      properties:
+        defaultContentLocale: { type: string, enum: [ar, en] }
+        content: { $ref: "#/components/schemas/AdminQuizContent" }
+        policy: { $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy" }
+    AdminQuizItem:
+      description: Stored exact revision reference and effective points, including resolved default points.
+      type: object
+      additionalProperties: false
+      required: [id, questionId, questionRevisionId, position, points]
+      properties:
+        id: { type: string, format: uuid }
+        questionId: { type: string, format: uuid }
+        questionRevisionId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0, maximum: 99 }
+        points: { type: integer, minimum: 1, maximum: 1000 }
+    AdminQuizListItem:
+      type: object
+      required: [id, courseId, parentType, parentId, status, editRevision, currentRevisionId, createdAt, draft]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        parentType: { type: string, enum: [course, chapter, lesson] }
+        parentId: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/AdminQuizStatus" }
+        editRevision: { type: integer, minimum: 0 }
+        currentRevisionId: { type: [string, "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        draft: { $ref: "#/components/schemas/AdminQuizDraft" }
+    AdminQuizDetail:
+      allOf:
+        - { $ref: "#/components/schemas/AdminQuizListItem" }
+        - type: object
+          required: [chapterId, lessonId, items]
+          properties:
+            chapterId: { type: [string, "null"], format: uuid }
+            lessonId: { type: [string, "null"], format: uuid }
+            items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AdminQuizItem" } }
+    AdminQuizPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/AdminQuizListItem" } }
+        page: { type: integer, minimum: 1, maximum: 100000 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }
+    AdminQuizPreviewQuestion:
+      description: Explicit selected-locale safe presentation allowlist. No grading definition, explanation, checksum, taxonomy or evidence.
+      type: object
+      additionalProperties: false
+      required: [questionId, questionRevisionId, position, points, type, locale, prompt]
+      properties:
+        questionId: { type: string, format: uuid }
+        questionRevisionId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0, maximum: 99 }
+        points: { type: integer, minimum: 1, maximum: 1000 }
+        type: { type: string, enum: [single_choice, multiple_choice, true_false, short_text, ordering] }
+        locale: { type: string, enum: [ar, en] }
+        prompt: { type: string, minLength: 1, maxLength: 20000 }
+        code: { $ref: "./assessments.yaml#/components/schemas/AssessmentCode" }
+        options: { type: array, minItems: 2, maxItems: 20, items: { $ref: "./assessments.yaml#/components/schemas/AssessmentLabel" } }
+        items: { type: array, minItems: 2, maxItems: 20, items: { $ref: "./assessments.yaml#/components/schemas/AssessmentLabel" } }
+    AdminQuizSafePreview:
+      description: Admin-authorized Student-safe projection. Locale fallback is per quiz and per question; requestedLocale is preserved. No attempts or progress mutations.
+      type: object
+      additionalProperties: false
+      required: [quizId, editRevision, requestedLocale, locale, title, instructions, policy, totalPoints, questions]
+      properties:
+        quizId: { type: string, format: uuid }
+        editRevision: { type: integer, minimum: 0 }
+        requestedLocale: { type: string, enum: [ar, en] }
+        locale: { type: string, enum: [ar, en] }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        instructions: { type: string, maxLength: 20000 }
+        policy: { $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy" }
+        totalPoints: { type: integer, minimum: 1, maximum: 100000 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/AdminQuizPreviewQuestion" } }
+    AdminQuizAnswerPreviewQuestion:
+      type: object
+      additionalProperties: false
+      required: [questionId, questionRevisionId, position, locale, gradingDefinition, explanation]
+      properties:
+        questionId: { type: string, format: uuid }
+        questionRevisionId: { type: string, format: uuid }
+        position: { type: integer, minimum: 0, maximum: 99 }
+        locale: { type: string, enum: [ar, en] }
+        gradingDefinition: { $ref: "./question-bank.yaml#/components/schemas/AdminQuestionGradingDefinition" }
+        explanation: { type: [string, "null"], maxLength: 20000 }
+    AdminQuizAnswerPreview:
+      description: Separate private Admin-only answer projection. Must never be merged into Student-safe presentation DTOs.
+      type: object
+      additionalProperties: false
+      required: [quizId, editRevision, questions]
+      properties:
+        quizId: { type: string, format: uuid }
+        editRevision: { type: integer, minimum: 0 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/AdminQuizAnswerPreviewQuestion" } }
+    AdminQuizReviewRelease:
+      type: object
+      additionalProperties: false
+      required: [quizRevisionId, releasedAt]
+      properties:
+        quizRevisionId: { type: string, format: uuid }
+        releasedAt: { type: string, format: date-time }
+    AdminQuizRevisionSummary:
+      type: object
+      required: [id, quizId, number, totalPoints, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        quizId: { type: string, format: uuid }
+        number: { type: integer, minimum: 1 }
+        totalPoints: { type: integer, minimum: 1, maximum: 100000 }
+        createdAt: { type: string, format: date-time }
+    AdminQuizRevision:
+      description: Explicit immutable projection. Internal assembly transaction, evidence snapshots and private question keys are not serialized.
+      allOf:
+        - { $ref: "#/components/schemas/AdminQuizRevisionSummary" }
+        - type: object
+          required: [courseId, defaultContentLocale, content, policy, schemaVersion, graderVersion, items, reviewRelease]
+          properties:
+            courseId: { type: string, format: uuid }
+            defaultContentLocale: { type: string, enum: [ar, en] }
+            content: { $ref: "#/components/schemas/AdminQuizContent" }
+            policy: { $ref: "./assessments.yaml#/components/schemas/AssessmentQuizPolicy" }
+            schemaVersion: { type: integer, enum: [1] }
+            graderVersion: { type: string, enum: [deterministic-v1] }
+            items: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/AdminQuizItem" } }
+            reviewRelease:
+              anyOf:
+                - { $ref: "#/components/schemas/AdminQuizReviewRelease" }
+                - { type: "null" }
+    AdminQuizRevisionPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/AdminQuizRevisionSummary" } }
+        page: { type: integer, minimum: 1, maximum: 100000 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }
+    AdminQuizPublishResult:
+      type: object
+      additionalProperties: false
+      required: [revision, editRevision]
+      properties:
+        revision: { $ref: "#/components/schemas/AdminQuizRevision" }
+        editRevision: { type: integer, minimum: 1 }

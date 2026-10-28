@@ -1,0 +1,259 @@
+openapi: 3.1.0
+info: { title: Api, version: 0.3.0 }
+paths:
+  /admin/lessons/{lessonId}/media:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listAdminLessonMedia
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Admin and verified MFA required; no storage locators returned, content: { application/json: { schema: { $ref: "#/components/schemas/MediaAssetList" } } } }
+        "403": { description: Inactive account or missing Admin/MFA }
+  /admin/lessons/{lessonId}/media/uploads:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: createMediaUpload
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MediaUploadInput" } } }
+      responses:
+        "201": { description: Authorized quarantined upload session, content: { application/json: { schema: { $ref: "#/components/schemas/MediaUploadIssued" } } } }
+        "403": { description: Admin MFA required }
+  /admin/media/uploads/{sessionId}/parts:
+    parameters:
+      - { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: issueMediaUploadPart
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaPartInput"
+      responses:
+        "201": { description: Owner and current Admin MFA required, content: { application/json: { schema: { $ref: "#/components/schemas/MediaPartIssued" } } } }
+  /admin/media/uploads/{sessionId}/complete:
+    parameters:
+      - { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: completeMediaUpload
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaCompleteInput"
+      responses:
+        "201": { description: Bytes inspected and copied to unique committed key; still quarantined, content: { application/json: { schema: { $ref: "#/components/schemas/MediaAssetResult" } } } }
+  /admin/media/{assetId}/scan:
+    parameters:
+      - { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: scanMediaAsset
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MediaEmptyInput" } } }
+      responses:
+        "201": { description: Genuine current-signature ClamAV scan and safe TXT preview; not publication, content: { application/json: { schema: { $ref: "#/components/schemas/MediaAssetResult" } } } }
+        "503": { description: Scanner unavailable or stale; remains unpublished }
+  /admin/media/{assetId}/publish:
+    parameters:
+      - { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: publishMediaAsset
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MediaEmptyInput" } } }
+      responses:
+        "201": { description: Publication requires clean scan and immutable preview, content: { application/json: { schema: { $ref: "#/components/schemas/MediaAssetResult" } } } }
+        "404": { description: Unscanned or rejected asset unavailable }
+  /lessons/{lessonId}/media:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listStudentLessonMedia
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Active enrolled Student and published ancestors required, content: { application/json: { schema: { $ref: "#/components/schemas/MediaAssetList" } } } }
+        "404": { description: Course or enrollment unavailable }
+  /media/{assetId}/access:
+    parameters:
+      - { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: issueMediaReadAccess
+      description: Every issuance including renewal rechecks current account, enrollment and publication; no server permission cache. Signed access lasts at most 120 seconds, clipped to token/enrollment expiry.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaAccessInput"
+      responses:
+        "201": { description: Private signed capability; never log or cache, content: { application/json: { schema: { $ref: "#/components/schemas/MediaReadAccess" } } } }
+        "404": { description: Asset or enrollment unavailable }
+  /admin/video-pilot/{assetId}/attach:
+    parameters:
+      - { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: attachVideoPilotFixture
+      description: Development-only bounded synthetic fixture. Requires genuine Admin MFA; no upload or arbitrary provider reference input.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/VideoPilotAttachInput" } } }
+      responses:
+        "201":
+          description: Fixture attached without modifying curriculum/progress
+          content: { application/json: { schema: { $ref: "#/components/schemas/VideoPilotAttached" } } }
+        "403": { description: Admin role and genuine MFA required }
+        "404": { description: Pilot disabled or fixture/lesson unavailable }
+  /lessons/{lessonId}/video-pilot:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listVideoPilotFixtures
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Development-only; active Student, valid enrollment and published ancestors required
+          content: { application/json: { schema: { $ref: "#/components/schemas/VideoPilotList" } } }
+        "404": { description: Disabled or unavailable }
+  /video-pilot/{assetId}/playback:
+    parameters:
+      - { name: assetId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: issueVideoPilotPlayback
+      description: Initial issuance and renewal use identical fresh account/enrollment/content checks. No cached authorization or public fallback.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MediaEmptyInput" } } }
+      responses:
+        "201":
+          description: Private manifest/poster capabilities, no downloads, expiry at most 300 seconds and clipped to token/enrollment
+          content: { application/json: { schema: { $ref: "#/components/schemas/VideoPilotPlayback" } } }
+        "404": { description: "Disabled, inactive enrollment, unpublished asset or ancestry" }
+        "503": { description: Provider unavailable; fail closed }
+components:
+  schemas:
+    VideoPilotAttachInput:
+      type: object
+      additionalProperties: false
+      required: [lessonId]
+      properties:
+        lessonId: { type: string, format: uuid }
+    VideoPilotAttached:
+      type: object
+      required: [attached]
+      properties:
+        attached: { type: boolean }
+    VideoPilotList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            required: [id, duration]
+            properties:
+              id: { type: string, format: uuid }
+              duration: { type: integer }
+    VideoPilotPlayback:
+      type: object
+      required: [manifest, poster, expiresAt]
+      properties:
+        manifest: { type: string, format: uri }
+        poster: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+    MediaPartInput:
+      type: object
+      additionalProperties: false
+      required: [partNumber]
+      properties: { partNumber: { type: integer, minimum: 1, maximum: 2 } }
+    MediaCompleteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        parts:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [partNumber, etag]
+            properties:
+              partNumber: { type: integer, minimum: 1, maximum: 2 }
+              etag: { type: string, maxLength: 102 }
+    MediaAccessInput:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties: { mode: { type: string, enum: [preview, download] } }
+    MediaEmptyInput:
+      type: object
+      additionalProperties: false
+    MediaAssetSummary:
+      type: object
+      required: [id, title, bytes, status, scanState, downloadsAllowed, mimeType]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        bytes: { type: integer }
+        status: { type: string, enum: [draft, published, archived] }
+        scanState: { type: string, enum: [pending, scanning, clean, rejected, failed] }
+        downloadsAllowed: { type: boolean }
+        mimeType: { type: string, enum: [text/plain] }
+    MediaAssetList:
+      type: object
+      required: [items]
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/MediaAssetSummary" } } }
+    MediaAssetResult:
+      type: object
+      required: [asset]
+      properties:
+        asset: { $ref: "#/components/schemas/MediaAssetSummary" }
+        state: { type: string }
+    MediaUploadInput:
+      type: object
+      additionalProperties: false
+      required: [title, bytes, mimeType]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        bytes: { type: integer, minimum: 1, maximum: 6291456 }
+        mimeType: { type: string, enum: [text/plain] }
+        method: { type: string, enum: [single, multipart], default: single }
+        downloadsAllowed: { type: boolean, default: true }
+    MediaUploadIssued:
+      type: object
+      required: [asset, sessionId, method, expiresAt, uploadUrlExpiresIn]
+      properties:
+        asset: { $ref: "#/components/schemas/MediaAssetSummary" }
+        sessionId: { type: string, format: uuid }
+        method: { type: string, enum: [single, multipart] }
+        uploadUrl: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+        uploadUrlExpiresIn: { type: integer, maximum: 120 }
+    MediaPartIssued:
+      type: object
+      required: [uploadUrl, expiresIn, partNumber]
+      properties:
+        uploadUrl: { type: string, format: uri }
+        expiresIn: { type: integer, minimum: 1, maximum: 120 }
+        partNumber: { type: integer, minimum: 1, maximum: 2 }
+    MediaReadAccess:
+      type: object
+      required: [url, expiresAt, expiresIn]
+      properties:
+        url: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+        expiresIn: { type: integer, minimum: 1, maximum: 120 }

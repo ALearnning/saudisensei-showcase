@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+.ss-course-current { --paper:40 38% 95%;--paper-2:38 30% 90%;--ink:188 45% 13%;--ink-soft:188 15% 34%;--palm:184 62% 24%;--palm-deep:186 70% 16%;--saffron:34 86% 52%;--line:36 20% 80%;--radius:18px;background:hsl(var(--paper));color:hsl(var(--ink));font:15px/1.65 'IBM Plex Sans Arabic',sans-serif;padding:32px;min-height:100dvh;}
+.ss-course-current * {box-sizing:border-box}
+.ss-course-current .preview-note{font-size:12px;color:hsl(var(--ink-soft))}
+.ss-course-current .stack{display:grid;gap:24px}
+.ss-course-current h1{font-size:32px}
+.ss-course-current a{color:inherit;text-decoration:none}
+.ss-course-current .page-head{display:grid;gap:8px}
+.ss-course-current .page-head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.ss-course-current .page-head h1{margin:0;overflow-wrap:anywhere}
+.ss-course-current .page-head .lead{margin:8px 0 0}
+.ss-course-current .page-head .actions{margin:0;align-items:center}
+.ss-course-current .panel{background:hsl(40 45% 98%);border:1px solid hsl(var(--line));border-radius:var(--radius);padding:clamp(18px,3vw,28px);box-shadow:0 14px 34px -30px hsl(var(--palm-deep)/.5);min-width:0}
+.ss-course-current .panel-title{display:flex;align-items:center;gap:8px;margin:0 0 14px;font-size:17px;font-weight:600}
+.ss-course-current .progress{display:grid;gap:7px}
+.ss-course-current .progress-row{display:flex;align-items:baseline;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.ss-course-current .progress-num{font-size:20px;font-variant-numeric:tabular-nums}
+.ss-course-current .progress-label{font-size:13px;color:hsl(var(--ink-soft))}
+.ss-course-current .track{height:8px;background:hsl(var(--paper-2));border-radius:99px;overflow:hidden}
+.ss-course-current .fill{display:block;height:100%;background:hsl(var(--palm));transform-origin:right}
+.ss-course-current .tag{font-size:11px;padding:3px 8px;border-radius:6px}
+.ss-course-current .tag.req{background:hsl(var(--palm-deep));color:hsl(var(--saffron))}
+.ss-course-current .outline{list-style:none;margin:0;padding:0;display:grid;gap:16px}
+.ss-course-current .ol-ch-title{display:flex;align-items:center;gap:10px;font-weight:600;margin-bottom:6px}
+.ss-course-current .ol-num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:hsl(var(--palm-deep));color:hsl(var(--saffron));font-size:13px;flex-shrink:0}
+.ss-course-current .outline ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;padding-inline-start:12px;border-inline-start:2px solid hsl(var(--line));margin-inline-start:12px}
+.ss-course-current .ol-lesson{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;text-decoration:none;font-size:14.5px}
+.ss-course-current .ol-lesson:hover{background:hsl(var(--paper-2))}
+.ss-course-current .ol-text{flex:1;min-width:0;overflow-wrap:anywhere}
+.ss-course-current .ol-lesson .ok{color:hsl(var(--palm));flex-shrink:0}
+.ss-course-current .ol-lesson .todo{color:hsl(var(--line));flex-shrink:0}
+.ss-course-current .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;background:hsl(var(--palm-deep));color:white}

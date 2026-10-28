@@ -1,0 +1,11 @@
+{
+  "name": "@workspace/api-server",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @workspace/saudisensei-api run dev",
+    "build": "pnpm --filter @workspace/saudisensei-api run build",
+    "start": "pnpm --filter @workspace/saudisensei-api run start",
+    "typecheck": "pnpm --filter @workspace/saudisensei-api run typecheck"
+  }
+}

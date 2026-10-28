@@ -1,0 +1,89 @@
+/* Student media: extends the existing paper/palm/saffron Student language. */
+.sm-root { margin-top: 28px; padding-top: 22px; border-top: 1px dashed hsl(var(--line)); display: grid; gap: 14px; min-width: 0; }
+.sm-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.sm-head .panel-title { margin: 0; }
+.sm-head p { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+
+.sm-scope { --tag: var(--palm); border: 1px solid hsl(var(--line)); border-radius: 16px; background: hsl(40 45% 98%); overflow: hidden; min-width: 0; }
+.sm-scope.sc-chapters { --tag: var(--saffron); }
+.sm-scope.sc-courses { --tag: var(--ink-soft); }
+.sm-scope-head { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; }
+.sm-scope-head:hover { background: hsl(var(--paper-2) / .55); }
+.sm-scope-head:focus-visible { outline: 3px solid hsl(var(--saffron)); outline-offset: -3px; }
+.sm-scope-tag { width: 6px; align-self: stretch; min-height: 34px; border-radius: 6px; background: hsl(var(--tag)); flex: none; }
+.sm-scope-text { flex: 1; min-width: 0; display: grid; }
+.sm-scope-text h3 { margin: 0; font-size: 16px; color: hsl(var(--ink)); }
+.sm-scope-text small { color: hsl(var(--ink-soft)); font-size: 12.5px; }
+.sm-count { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: hsl(var(--tag) / .12); color: hsl(var(--ink)); white-space: nowrap; }
+.sm-chev { color: hsl(var(--ink-soft)); transition: transform .2s ease; flex: none; }
+.sm-chev.up { transform: rotate(180deg); }
+
+.sm-group { padding: 0 12px 12px; }
+.sm-collection { margin: 8px 6px 6px; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; color: hsl(var(--ink-soft)); display: grid; gap: 2px; }
+.sm-collection small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sm-item { border: 1px solid hsl(var(--line) / .8); border-radius: 12px; background: hsl(var(--paper)); transition: border-color .15s, box-shadow .15s; min-width: 0; }
+.sm-item.open { border-color: hsl(var(--tag) / .6); box-shadow: 0 10px 26px -22px hsl(var(--palm-deep) / .8); background: hsl(40 45% 98%); }
+.sm-row { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 12px; padding: 10px 12px; }
+.sm-idx { font-variant-numeric: tabular-nums; font-size: 12px; color: hsl(var(--ink-soft)); width: 20px; text-align: center; }
+.sm-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: hsl(var(--palm) / .1); color: hsl(var(--palm)); }
+.sm-icon.k-video { background: hsl(var(--saffron) / .16); color: hsl(32 80% 34%); }
+.sm-icon.k-image { background: hsl(var(--rose) / .1); color: hsl(var(--rose)); }
+.sm-icon.k-text, .sm-icon.k-file { background: hsl(var(--ink-soft) / .1); color: hsl(var(--ink)); }
+.sm-info { min-width: 0; display: grid; gap: 2px; }
+.sm-title { font-weight: 600; color: hsl(var(--ink)); overflow-wrap: anywhere; }
+.sm-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; color: hsl(var(--ink-soft)); min-width: 0; }
+.sm-fname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
+.sm-vo { display: inline-flex; align-items: center; gap: 4px; padding: 0 7px; border-radius: 999px; border: 1px solid hsl(var(--line)); }
+.sm-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.sm-inline-err { margin: 0 12px 10px; font-size: 13px; color: hsl(var(--rose)); }
+.sm-empty { padding: 4px 18px 16px; margin: 0; }
+.sm-skel { padding: 0 16px 16px; display: grid; gap: 8px; }
+.sm-skel span { height: 52px; border-radius: 12px; background: linear-gradient(90deg, hsl(var(--paper-2)), hsl(var(--paper)), hsl(var(--paper-2))); background-size: 200% 100%; animation: sm-shimmer 1.4s linear infinite; }
+@keyframes sm-shimmer { to { background-position: -200% 0; } }
+
+.sm-viewer { padding: 0 12px 12px; animation: sm-in .25s ease both; }
+@keyframes sm-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.sm-state { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 18px; border-radius: 12px; background: hsl(var(--paper-2) / .6); color: hsl(var(--ink)); font-size: 14px; }
+.sm-state p { margin: 0; flex: 1; min-width: 180px; }
+.sm-state.bad { background: hsl(var(--rose) / .07); border: 1px solid hsl(var(--rose) / .25); }
+.sm-state.bad svg { color: hsl(var(--rose)); flex: none; }
+.sm-state.s-expired svg, .sm-state.s-transient svg { color: hsl(32 80% 36%); }
+.sm-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid hsl(var(--palm) / .2); border-top-color: hsl(var(--palm)); animation: sm-rot .8s linear infinite; flex: none; }
+@keyframes sm-rot { to { transform: rotate(360deg); } }
+.sm-banner { margin: 0 0 8px; padding: 8px 12px; border-radius: 10px; font-size: 13px; background: hsl(var(--saffron) / .14); border: 1px solid hsl(var(--saffron) / .4); }
+.sm-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; background: hsl(var(--ink) / .35); color: hsl(40 45% 97%); font-size: 14px; pointer-events: none; }
+.sm-overlay .sm-spin { border-color: hsl(0 0% 100% / .3); border-top-color: hsl(40 45% 97%); }
+
+.sm-text { margin: 0; max-height: min(70vh, 640px); overflow: auto; padding: 18px; border-radius: 12px; background: hsl(40 40% 96%); border: 1px solid hsl(var(--line)); font: 14px/1.75 ui-monospace, "SFMono-Regular", Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: hsl(var(--ink)); }
+.sm-image { margin: 0; display: grid; place-items: center; padding: 10px; border-radius: 12px; background: repeating-conic-gradient(hsl(var(--paper-2)) 0 25%, hsl(var(--paper)) 0 50%) 0 0 / 18px 18px; }
+.sm-image img { max-width: 100%; max-height: min(75vh, 820px); height: auto; border-radius: 8px; user-select: none; }
+
+.sm-pdf { border: 1px solid hsl(var(--line)); border-radius: 12px; overflow: hidden; background: hsl(var(--paper-2) / .5); }
+.sm-pdf-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: hsl(40 45% 98%); border-bottom: 1px solid hsl(var(--line)); position: sticky; top: 0; z-index: 1; }
+.sm-pdf-sp { flex: 1; }
+.sm-pdf-page { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: hsl(var(--ink-soft)); }
+.sm-pdf-page input { width: 3.4em; text-align: center; padding: 6px 4px; border-radius: 8px; border: 1px solid hsl(var(--line)); background: hsl(var(--paper)); font: inherit; color: hsl(var(--ink)); }
+.sm-root .icon-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; border: 1px solid hsl(var(--line)); background: hsl(var(--paper)); color: hsl(var(--ink)); cursor: pointer; }
+.sm-root .icon-btn:hover:not(:disabled) { background: hsl(var(--paper-2)); }
+.sm-root .icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+.sm-pdf-stage { position: relative; max-height: min(80vh, 1100px); min-height: 240px; overflow: auto; padding: 14px; }
+.sm-pdf-stage:focus-visible { outline: 3px solid hsl(var(--saffron)); outline-offset: -3px; }
+.sm-pdf-canvas-wrap { width: max-content; min-width: 100%; display: flex; justify-content: center; }
+.sm-pdf-canvas-wrap canvas { display: block; background: #fbfaf6; box-shadow: 0 8px 24px -16px hsl(var(--ink) / .6); border-radius: 2px; }
+
+.sm-video-frame { position: relative; border-radius: 12px; overflow: hidden; background: hsl(188 45% 8%); aspect-ratio: 16 / 9; }
+.sm-video-frame[hidden] { display: none; }
+.sm-video-frame video { width: 100%; height: 100%; display: block; object-fit: contain; }
+
+@media (max-width: 640px) {
+  .sm-row { grid-template-columns: auto 1fr; }
+  .sm-idx { display: none; }
+  .sm-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .sm-actions .btn { flex: 1; min-height: 44px; }
+  .sm-group { padding: 0 8px 8px; }
+  .sm-viewer { padding: 0 6px 8px; }
+  .sm-pdf-stage { padding: 8px; }
+  .sm-root .icon-btn { width: 42px; height: 42px; }
+}
+@media (prefers-reduced-motion: reduce) { .sm-viewer, .sm-skel span, .sm-chev { animation: none; transition: none; } .sm-spin { animation-duration: 2s; } }

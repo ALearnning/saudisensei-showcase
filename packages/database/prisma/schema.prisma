@@ -1,0 +1,908 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  suspended
+  deleted
+  @@map("user_status")
+}
+
+enum RoleName {
+  student
+  admin
+  @@map("role_name")
+}
+
+enum ContentStatus {
+  draft
+  published
+  archived
+  @@map("content_status")
+}
+
+enum EnrollmentStatus {
+  active
+  revoked
+  expired
+  @@map("enrollment_status")
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @db.VarChar(320)
+  displayName     String     @map("display_name") @db.VarChar(120)
+  status          UserStatus @default(active)
+  preferredLocale String     @default("ar") @map("preferred_locale") @db.VarChar(2)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  identities      UserIdentity[]
+  roles           UserRole[] @relation("AssignedRoles")
+  roleGrants      UserRole[] @relation("RoleGrantor")
+  courses         Course[]
+  enrollments     Enrollment[] @relation("EnrolledStudent")
+  enrollmentGrants Enrollment[] @relation("EnrollmentGrantor")
+  auditLogs       AuditLog[]
+  mediaAssets     MediaAsset[]
+  mediaUploads    MediaUploadSession[]
+  authoredContentMedia ContentMediaAsset[]
+  authoredMediaRevisions MediaRevision[]
+  processingUploads MediaProcessingUpload[]
+  assessmentQuestions Question[]
+  assessmentQuestionRevisions QuestionRevision[]
+  assessmentQuizzes Quiz[]
+  assessmentQuizRevisions QuizRevision[]
+  assessmentReviewReleases QuizReviewRelease[]
+  assessmentMutations AssessmentMutation[]
+  assessmentContentLinks SkillContentLink[]
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model UserIdentity {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  issuer    String   @db.VarChar(512)
+  subject   String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([issuer, subject])
+  @@index([userId])
+  @@map("user_identities")
+}
+
+model Role {
+  id   String @id @default(uuid()) @db.Uuid
+  name RoleName @unique
+  users UserRole[]
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Uuid
+  roleId    String   @map("role_id") @db.Uuid
+  grantedBy String?  @map("granted_by") @db.Uuid
+  grantedAt DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+  user      User @relation("AssignedRoles", fields: [userId], references: [id], onDelete: Restrict)
+  role      Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  grantor   User? @relation("RoleGrantor", fields: [grantedBy], references: [id], onDelete: Restrict)
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Course {
+  id          String @id @default(uuid()) @db.Uuid
+  slug        String @unique @db.VarChar(160)
+  title       String @db.VarChar(255)
+  description String @default("") @db.Text
+  status      ContentStatus @default(draft)
+  editRevision Int @default(0) @map("edit_revision")
+  createdBy   String @map("created_by") @db.Uuid
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  archivedAt  DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creator     User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  chapters    Chapter[]
+  contentMedia ContentMediaAsset[]
+  mediaCollections MediaCollection[]
+  mediaPlacements MediaPlacement[]
+  mediaState CourseMediaState?
+  enrollments Enrollment[]
+  quizzes Quiz[]
+  skillContentLinks SkillContentLink[]
+  @@index([status])
+  @@map("courses")
+}
+
+model Chapter {
+  id         String @id @default(uuid()) @db.Uuid
+  courseId   String @map("course_id") @db.Uuid
+  title      String @db.VarChar(255)
+  status     ContentStatus @default(draft)
+  position   Int
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lessons    Lesson[]
+  mediaCollections MediaCollection[]
+  mediaPlacements MediaPlacement[]
+  quizzes Quiz[]
+  skillContentLinks SkillContentLink[]
+  @@unique([id, courseId])
+  @@unique([courseId, position])
+  @@index([courseId, status, position])
+  @@map("chapters")
+}
+
+model Lesson {
+  id               String @id @default(uuid()) @db.Uuid
+  chapterId        String @map("chapter_id") @db.Uuid
+  courseId         String @map("course_id") @db.Uuid
+  title            String @db.VarChar(255)
+  body             String @default("") @db.Text
+  status           ContentStatus @default(draft)
+  isRequired       Boolean @default(true) @map("is_required")
+  position         Int
+  estimatedMinutes Int? @map("estimated_minutes")
+  archivedAt       DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chapter          Chapter @relation(fields: [chapterId, courseId], references: [id, courseId], onDelete: Restrict)
+  completions      LessonCompletion[]
+  media            MediaAsset[]
+  videoPilotAssets VideoPilotAsset[]
+  mediaCollections MediaCollection[]
+  mediaPlacements MediaPlacement[]
+  quizzes Quiz[]
+  skillContentLinks SkillContentLink[]
+  @@unique([id, chapterId, courseId], map: "lessons_media_ancestry_key")
+  @@unique([id, courseId])
+  @@unique([chapterId, position])
+  @@index([courseId, status, isRequired])
+  @@map("lessons")
+}
+
+model Enrollment {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  courseId   String @map("course_id") @db.Uuid
+  status     EnrollmentStatus @default(active)
+  enrolledAt DateTime @default(now()) @map("enrolled_at") @db.Timestamptz(6)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  grantedBy  String @map("granted_by") @db.Uuid
+  student    User @relation("EnrolledStudent", fields: [userId], references: [id], onDelete: Restrict)
+  grantor    User @relation("EnrollmentGrantor", fields: [grantedBy], references: [id], onDelete: Restrict)
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  completions LessonCompletion[]
+  assessmentAttempts AssessmentAttempt[]
+  @@unique([userId, courseId])
+  @@unique([id, courseId])
+  @@unique([id, userId, courseId], map: "enrollments_assessment_owner_key")
+  @@index([courseId, status])
+  @@index([userId, status])
+  @@map("enrollments")
+}
+
+model LessonCompletion {
+  id           String @id @default(uuid()) @db.Uuid
+  enrollmentId String @map("enrollment_id") @db.Uuid
+  lessonId     String @map("lesson_id") @db.Uuid
+  courseId     String @map("course_id") @db.Uuid
+  completedAt  DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  enrollment   Enrollment @relation(fields: [enrollmentId, courseId], references: [id, courseId], onDelete: Restrict)
+  lesson       Lesson @relation(fields: [lessonId, courseId], references: [id, courseId], onDelete: Restrict)
+  @@unique([enrollmentId, lessonId])
+  @@index([lessonId])
+  @@map("lesson_completions")
+}
+
+model AuditLog {
+  id          String @id @default(uuid()) @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  action      String @db.VarChar(100)
+  entityType  String @map("entity_type") @db.VarChar(100)
+  entityId    String? @map("entity_id") @db.Uuid
+  requestId   String? @map("request_id") @db.Uuid
+  metadata    Json @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor       User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@map("audit_logs")
+}
+
+model MediaAsset {
+  id            String @id @default(uuid()) @db.Uuid
+  lessonId      String @map("lesson_id") @db.Uuid
+  courseId      String @map("course_id") @db.Uuid
+  revisionRef   String @unique @map("revision_ref") @db.Uuid
+  title         String @db.VarChar(255)
+  mimeType      String @map("mime_type") @db.VarChar(100)
+  bytes         Int
+  objectKey     String @unique @map("object_key") @db.VarChar(512)
+  previewKey    String? @unique @map("preview_key") @db.VarChar(512)
+  sha256        String? @db.VarChar(64)
+  scanState     String @default("pending") @map("scan_state") @db.VarChar(16)
+  scannedAt     DateTime? @map("scanned_at") @db.Timestamptz(6)
+  scanEngine    String? @map("scan_engine") @db.VarChar(120)
+  status        ContentStatus @default(draft)
+  downloadsAllowed Boolean @default(true) @map("downloads_allowed")
+  createdBy     String @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lesson        Lesson @relation(fields: [lessonId, courseId], references: [id, courseId], onDelete: Restrict)
+  creator       User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  upload        MediaUploadSession?
+  @@index([lessonId, status, scanState])
+  @@map("media_assets")
+}
+
+// Bounded development fixture metadata only; never video bytes or signed tokens.
+model VideoPilotAsset {
+  id          String @id @default(uuid()) @db.Uuid
+  fixture     String @unique @db.VarChar(8)
+  provider    String @default("cloudflare-stream") @db.VarChar(40)
+  providerRef String @unique @map("provider_ref") @db.VarChar(64)
+  playbackHost String @map("playback_host") @db.VarChar(255)
+  sourceKey   String @unique @map("source_key") @db.VarChar(512)
+  sha256      String @db.VarChar(64)
+  bytes       Int
+  duration    Int
+  scanEngine  String @map("scan_engine") @db.VarChar(120)
+  scannedAt   DateTime @map("scanned_at") @db.Timestamptz(6)
+  privateReady Boolean @default(false) @map("private_ready")
+  status      ContentStatus @default(draft)
+  lessonId    String? @map("lesson_id") @db.Uuid
+  courseId    String? @map("course_id") @db.Uuid
+  lesson      Lesson? @relation(fields: [lessonId, courseId], references: [id, courseId], onDelete: Restrict)
+  @@index([lessonId, status])
+  @@map("video_pilot_assets")
+}
+
+model MediaUploadSession {
+  id            String @id @default(uuid()) @db.Uuid
+  assetId       String @unique @map("asset_id") @db.Uuid
+  uploaderId    String @map("uploader_id") @db.Uuid
+  stagingKey    String @unique @map("staging_key") @db.VarChar(512)
+  providerUploadId String? @map("provider_upload_id") @db.Text
+  method        String @db.VarChar(16)
+  state         String @default("issued") @db.VarChar(16)
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  asset         MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  uploader      User @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+  @@index([uploaderId, state, expiresAt])
+  @@map("media_upload_sessions")
+}
+
+// General authoring foundation. Pilot tables above remain untouched.
+// Parent shape checks and immutable-content triggers are in the additive migration.
+model ContentMediaAsset {
+  id String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  kind String @db.VarChar(16)
+  title String @db.VarChar(255)
+  status String @default("draft") @db.VarChar(16)
+  downloadsAllowed Boolean @default(false) @map("downloads_allowed")
+  currentRevisionId String? @map("current_revision_id") @db.Uuid
+  stagedRevisionId String? @map("staged_revision_id") @db.Uuid
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  revisions MediaRevision[] @relation("OwnedMediaRevisions")
+  currentRevision MediaRevision? @relation("CurrentMediaRevision", fields: [currentRevisionId, id, courseId], references: [id, assetId, courseId], onDelete: Restrict, onUpdate: NoAction, map: "content_media_current_owned")
+  stagedRevision MediaRevision? @relation("StagedMediaRevision", fields: [stagedRevisionId, id, courseId], references: [id, assetId, courseId], onDelete: Restrict, onUpdate: NoAction, map: "content_media_staged_owned")
+  placement MediaPlacement?
+  @@unique([id, courseId])
+  @@index([courseId, status], map: "content_media_assets_course_status")
+  @@map("content_media_assets")
+}
+
+model MediaRevision {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @map("asset_id") @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  filename String @db.VarChar(255)
+  mimeType String @map("mime_type") @db.VarChar(100)
+  bytes BigInt
+  state String @default("pending") @db.VarChar(16)
+  scanState String @default("pending") @map("scan_state") @db.VarChar(16)
+  sha256 String? @db.VarChar(64)
+  scanEngine String? @map("scan_engine") @db.VarChar(120)
+  scannedAt DateTime? @map("scanned_at") @db.Timestamptz(6)
+  objectKey String? @map("object_key") @db.Text
+  previewKey String? @map("preview_key") @db.Text
+  providerRef String? @map("provider_ref") @db.Text
+  privateReady Boolean @default(false) @map("private_ready")
+  safePreview Boolean @default(false) @map("safe_preview")
+  duration Int?
+  pageCount Int? @map("page_count")
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  asset ContentMediaAsset @relation("OwnedMediaRevisions", fields: [assetId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  currentFor ContentMediaAsset[] @relation("CurrentMediaRevision")
+  stagedFor ContentMediaAsset[] @relation("StagedMediaRevision")
+  processingUpload MediaProcessingUpload?
+  processingJob MediaJob?
+  renditions MediaRendition[]
+  @@unique([id, assetId, courseId])
+  @@index([assetId, createdAt], map: "media_revisions_asset_created")
+  @@map("media_revisions")
+}
+
+model MediaCollection {
+  id String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  parentType String @map("parent_type") @db.VarChar(16)
+  parentId String @map("parent_id") @db.Uuid
+  chapterId String? @map("chapter_id") @db.Uuid
+  lessonId String? @map("lesson_id") @db.Uuid
+  title String @db.VarChar(255)
+  description String @default("") @db.VarChar(1000)
+  position Int @default(0)
+  status String @default("draft") @db.VarChar(16)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  chapter Chapter? @relation(fields: [chapterId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  lesson Lesson? @relation(fields: [lessonId, chapterId, courseId], references: [id, chapterId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  placements MediaPlacement[]
+  @@unique([id, courseId, parentType, parentId])
+  @@index([courseId, parentType, parentId, position], map: "media_collections_parent_order")
+  @@map("media_collections")
+}
+
+model MediaPlacement {
+  id String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  assetId String @unique @map("asset_id") @db.Uuid
+  parentType String @map("parent_type") @db.VarChar(16)
+  parentId String @map("parent_id") @db.Uuid
+  chapterId String? @map("chapter_id") @db.Uuid
+  lessonId String? @map("lesson_id") @db.Uuid
+  collectionId String? @map("collection_id") @db.Uuid
+  position Int @default(0)
+  status String @default("draft") @db.VarChar(16)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  asset ContentMediaAsset @relation(fields: [assetId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  chapter Chapter? @relation(fields: [chapterId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  lesson Lesson? @relation(fields: [lessonId, chapterId, courseId], references: [id, chapterId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  collection MediaCollection? @relation(fields: [collectionId, courseId, parentType, parentId], references: [id, courseId, parentType, parentId], onDelete: Restrict, onUpdate: NoAction, map: "media_placements_collection_scope_fkey")
+  skillContentLinks SkillContentLink[]
+  @@unique([assetId, courseId])
+  @@unique([id, courseId], map: "media_placements_assessment_scope_key")
+  @@index([courseId, parentType, parentId, collectionId, position], map: "media_placements_parent_order")
+  @@map("media_placements")
+}
+
+model CourseMediaState {
+  courseId String @id @map("course_id") @db.Uuid
+  editRevision Int @default(0) @map("edit_revision")
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("course_media_states")
+}
+
+// Durable processing is separate from editorial publication and curriculum.
+model MediaProcessingUpload {
+  id String @id @default(uuid()) @db.Uuid
+  revisionId String @unique @map("revision_id") @db.Uuid
+  uploaderId String @map("uploader_id") @db.Uuid
+  stagingKey String @unique @map("staging_key") @db.Text
+  sourceKey String @unique @map("source_key") @db.Text
+  uploadRef String? @map("upload_ref") @db.Text
+  method String @db.VarChar(16)
+  state String @default("issued") @db.VarChar(16)
+  sourceEtag String? @map("source_etag") @db.VarChar(128)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  revision MediaRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@index([state, expiresAt])
+  @@map("media_processing_uploads")
+}
+
+model MediaJob {
+  id String @id @default(uuid()) @db.Uuid
+  revisionId String @unique @map("revision_id") @db.Uuid
+  state String @default("queued") @db.VarChar(24)
+  stage String @default("scan") @db.VarChar(24)
+  attempts Int @default(0)
+  maxAttempts Int @default(5) @map("max_attempts")
+  failures Int @default(0)
+  polls Int @default(0)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(6)
+  leaseToken String? @map("lease_token") @db.Uuid
+  leaseUntil DateTime? @map("lease_until") @db.Timestamptz(6)
+  providerRef String? @map("provider_ref") @db.Text
+  errorCode String? @map("error_code") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  revision MediaRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  processingAttempts MediaProcessingAttempt[]
+  @@index([state, availableAt, leaseUntil], map: "media_jobs_claim")
+  @@map("media_jobs")
+}
+
+model MediaProcessingAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  jobId String @map("job_id") @db.Uuid
+  number Int
+  state String @default("running") @db.VarChar(24)
+  errorCode String? @map("error_code") @db.VarChar(64)
+  startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  job MediaJob @relation(fields: [jobId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([jobId, number])
+  @@map("media_processing_attempts")
+}
+
+model MediaRendition {
+  id String @id @default(uuid()) @db.Uuid
+  revisionId String @map("revision_id") @db.Uuid
+  kind String @db.VarChar(24)
+  locator String @db.Text
+  contentType String @map("content_type") @db.VarChar(100)
+  verifiedAt DateTime @map("verified_at") @db.Timestamptz(6)
+  revision MediaRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([revisionId, kind])
+  @@map("media_renditions")
+}
+
+// Deferrable aggregate seals, checks and partial indexes are SQL-managed in
+// 20261021010000_assessment_foundation. Do not replace these with db push.
+model Question {
+  id String @id @default(uuid()) @db.Uuid
+  status String @default("active") @db.VarChar(16)
+  editRevision Int @default(0) @map("edit_revision")
+  currentRevisionId String? @map("current_revision_id") @db.Uuid
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  draft QuestionDraft?
+  revisions QuestionRevision[] @relation("QuestionRevisions")
+  currentRevision QuestionRevision? @relation("CurrentQuestionRevision", fields: [currentRevisionId, id], references: [id, questionId], onDelete: Restrict, onUpdate: NoAction, map: "assessment_question_current_owned")
+  skills QuestionSkill[]
+  cognitiveTags QuestionCognitiveTag[]
+  @@map("assessment_questions")
+}
+
+model QuestionDraft {
+  questionId String @id @map("question_id") @db.Uuid
+  type String @db.VarChar(24)
+  defaultContentLocale String @map("default_content_locale") @db.VarChar(2)
+  content Json
+  gradingDefinition Json @map("grading_definition")
+  explanation Json
+  difficulty String @db.VarChar(16)
+  defaultPoints Int @default(1) @map("default_points")
+  schemaVersion Int @default(1) @map("schema_version")
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("assessment_question_drafts")
+}
+
+model QuestionRevision {
+  id String @id @default(uuid()) @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  number Int
+  type String @db.VarChar(24)
+  defaultContentLocale String @map("default_content_locale") @db.VarChar(2)
+  content Json
+  gradingDefinition Json @map("grading_definition")
+  explanation Json
+  difficulty String @db.VarChar(16)
+  skillSnapshot Json @map("skill_snapshot")
+  cognitiveTags Json @map("cognitive_tags")
+  schemaVersion Int @default(1) @map("schema_version")
+  graderVersion String @map("grader_version") @db.VarChar(64)
+  checksum String @db.VarChar(64)
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  question Question @relation("QuestionRevisions", fields: [questionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  currentFor Question[] @relation("CurrentQuestionRevision")
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  draftItems QuizDraftItem[]
+  revisionItems QuizRevisionItem[]
+  @@unique([questionId, number])
+  @@unique([id, questionId])
+  @@map("assessment_question_revisions")
+}
+
+model Skill {
+  id String @id @default(uuid()) @db.Uuid
+  slug String @unique @db.VarChar(160)
+  parentId String? @map("parent_id") @db.Uuid
+  status String @default("active") @db.VarChar(16)
+  editRevision Int @default(0) @map("edit_revision")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  parent Skill? @relation("SkillTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  children Skill[] @relation("SkillTree")
+  translations SkillTranslation[]
+  questions QuestionSkill[]
+  evidence SkillEvidence[]
+  contentLinks SkillContentLink[]
+  @@index([parentId])
+  @@map("assessment_skills")
+}
+
+model SkillTranslation {
+  skillId String @map("skill_id") @db.Uuid
+  locale String @db.VarChar(2)
+  label String @db.VarChar(255)
+  description String @default("") @db.VarChar(2000)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@id([skillId, locale])
+  @@map("assessment_skill_translations")
+}
+
+model QuestionSkill {
+  questionId String @map("question_id") @db.Uuid
+  skillId String @map("skill_id") @db.Uuid
+  role String @db.VarChar(16)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@id([questionId, skillId])
+  @@map("assessment_question_skills")
+}
+
+model QuestionCognitiveTag {
+  questionId String @map("question_id") @db.Uuid
+  code String @db.VarChar(24)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@id([questionId, code])
+  @@map("assessment_question_cognitive_tags")
+}
+
+model Quiz {
+  id String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  parentType String @map("parent_type") @db.VarChar(16)
+  parentId String @map("parent_id") @db.Uuid
+  chapterId String? @map("chapter_id") @db.Uuid
+  lessonId String? @map("lesson_id") @db.Uuid
+  status String @default("draft") @db.VarChar(16)
+  editRevision Int @default(0) @map("edit_revision")
+  currentRevisionId String? @map("current_revision_id") @db.Uuid
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  chapter Chapter? @relation(fields: [chapterId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  lesson Lesson? @relation(fields: [lessonId, chapterId, courseId], references: [id, chapterId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  draft QuizDraft?
+  revisions QuizRevision[] @relation("QuizRevisions")
+  currentRevision QuizRevision? @relation("CurrentQuizRevision", fields: [currentRevisionId, id, courseId], references: [id, quizId, courseId], onDelete: Restrict, onUpdate: NoAction, map: "assessment_quiz_current_owned")
+  @@unique([id, courseId])
+  @@index([courseId, parentType, parentId])
+  @@map("assessment_quizzes")
+}
+
+model QuizDraft {
+  quizId String @id @map("quiz_id") @db.Uuid
+  defaultContentLocale String @map("default_content_locale") @db.VarChar(2)
+  content Json
+  policy Json
+  schemaVersion Int @default(1) @map("schema_version")
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  items QuizDraftItem[]
+  @@map("assessment_quiz_drafts")
+}
+
+model QuizDraftItem {
+  id String @id @default(uuid()) @db.Uuid
+  quizId String @map("quiz_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  questionRevisionId String @map("question_revision_id") @db.Uuid
+  position Int
+  points Int
+  draft QuizDraft @relation(fields: [quizId], references: [quizId], onDelete: Restrict, onUpdate: NoAction)
+  questionRevision QuestionRevision @relation(fields: [questionRevisionId, questionId], references: [id, questionId], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([quizId, position])
+  @@unique([quizId, questionId])
+  @@map("assessment_quiz_draft_items")
+}
+
+model QuizRevision {
+  id String @id @default(uuid()) @db.Uuid
+  assemblyTransaction BigInt @default(dbgenerated("((pg_current_xact_id())::text)::bigint")) @map("assembly_transaction")
+  quizId String @map("quiz_id") @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  number Int
+  defaultContentLocale String @map("default_content_locale") @db.VarChar(2)
+  content Json
+  mode String @db.VarChar(16)
+  required Boolean @default(false)
+  passBasisPoints Int @default(7000) @map("pass_basis_points")
+  maxAttempts Int? @map("max_attempts")
+  timeLimitSeconds Int? @map("time_limit_seconds")
+  opensAt DateTime? @map("opens_at") @db.Timestamptz(6)
+  closesAt DateTime? @map("closes_at") @db.Timestamptz(6)
+  shuffleQuestions Boolean @default(false) @map("shuffle_questions")
+  shuffleOptions Boolean @default(false) @map("shuffle_options")
+  scoreVisibility String @map("score_visibility") @db.VarChar(24)
+  reviewVisibility String @map("review_visibility") @db.VarChar(24)
+  explanationVisibility String @map("explanation_visibility") @db.VarChar(24)
+  aiAnalysisEnabled Boolean @default(false) @map("ai_analysis_enabled")
+  totalPoints Int @map("total_points")
+  schemaVersion Int @default(1) @map("schema_version")
+  graderVersion String @map("grader_version") @db.VarChar(64)
+  createdBy String @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  quiz Quiz @relation("QuizRevisions", fields: [quizId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  currentFor Quiz[] @relation("CurrentQuizRevision")
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  items QuizRevisionItem[]
+  reviewRelease QuizReviewRelease?
+  attempts AssessmentAttempt[]
+  @@unique([quizId, number])
+  @@unique([id, quizId, courseId])
+  @@map("assessment_quiz_revisions")
+}
+
+model QuizRevisionItem {
+  id String @id @default(uuid()) @db.Uuid
+  quizRevisionId String @map("quiz_revision_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  questionRevisionId String @map("question_revision_id") @db.Uuid
+  position Int
+  points Int
+  evidenceSnapshot Json @map("evidence_snapshot")
+  revision QuizRevision @relation(fields: [quizRevisionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  questionRevision QuestionRevision @relation(fields: [questionRevisionId, questionId], references: [id, questionId], onDelete: Restrict, onUpdate: NoAction)
+  attemptQuestions AttemptQuestion[]
+  @@unique([quizRevisionId, position])
+  @@unique([quizRevisionId, questionId])
+  @@unique([id, quizRevisionId])
+  @@map("assessment_quiz_revision_items")
+}
+
+model QuizReviewRelease {
+  quizRevisionId String @id @map("quiz_revision_id") @db.Uuid
+  releasedBy String @map("released_by") @db.Uuid
+  requestId String @map("request_id") @db.Uuid
+  releasedAt DateTime @default(now()) @map("released_at") @db.Timestamptz(6)
+  revision QuizRevision @relation(fields: [quizRevisionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  actor User @relation(fields: [releasedBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("assessment_quiz_review_releases")
+}
+
+model AssessmentAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  assemblyTransaction BigInt @default(dbgenerated("((pg_current_xact_id())::text)::bigint")) @map("assembly_transaction")
+  quizId String @map("quiz_id") @db.Uuid
+  quizRevisionId String @map("quiz_revision_id") @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  enrollmentId String @map("enrollment_id") @db.Uuid
+  studentUserId String @map("student_user_id") @db.Uuid
+  attemptNumber Int @map("attempt_number")
+  status String @default("IN_PROGRESS") @db.VarChar(24)
+  selectedContentLocale String @map("selected_content_locale") @db.VarChar(2)
+  concurrencyVersion Int @default(0) @map("concurrency_version")
+  startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  opensAt DateTime? @map("opens_at") @db.Timestamptz(6)
+  closesAt DateTime? @map("closes_at") @db.Timestamptz(6)
+  timeLimitSeconds Int? @map("time_limit_seconds")
+  deadlineAt DateTime? @map("deadline_at") @db.Timestamptz(6)
+  deadlineReason String? @map("deadline_reason") @db.VarChar(24)
+  submittedAt DateTime? @map("submitted_at") @db.Timestamptz(6)
+  effectiveSubmittedAt DateTime? @map("effective_submitted_at") @db.Timestamptz(6)
+  finalizationReason String? @map("finalization_reason") @db.VarChar(24)
+  gradedAt DateTime? @map("graded_at") @db.Timestamptz(6)
+  revision QuizRevision @relation(fields: [quizRevisionId, quizId, courseId], references: [id, quizId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  enrollment Enrollment @relation(fields: [enrollmentId, studentUserId, courseId], references: [id, userId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  questions AttemptQuestion[]
+  grade AttemptGrade?
+  telemetrySessions AssessmentTelemetrySession[]
+  evidence SkillEvidence[]
+  jobs AssessmentJob[]
+  @@unique([id, quizRevisionId])
+  @@unique([id, studentUserId])
+  @@unique([studentUserId, quizId, attemptNumber])
+  @@index([studentUserId, startedAt, id])
+  @@index([enrollmentId])
+  @@index([quizRevisionId])
+  @@index([status, deadlineAt])
+  @@map("assessment_attempts")
+}
+
+model AttemptQuestion {
+  id String @id @default(uuid()) @db.Uuid
+  attemptId String @map("attempt_id") @db.Uuid
+  quizRevisionId String @map("quiz_revision_id") @db.Uuid
+  itemId String @map("item_id") @db.Uuid
+  position Int
+  contentLocale String @map("content_locale") @db.VarChar(2)
+  presentation Json
+  attempt AssessmentAttempt @relation(fields: [attemptId, quizRevisionId], references: [id, quizRevisionId], onDelete: Restrict, onUpdate: NoAction)
+  item QuizRevisionItem @relation(fields: [itemId, quizRevisionId], references: [id, quizRevisionId], onDelete: Restrict, onUpdate: NoAction)
+  state AttemptQuestionState?
+  answer AttemptAnswer?
+  grade AttemptQuestionGrade?
+  telemetry AttemptQuestionTelemetry?
+  activeSessions AssessmentTelemetrySession[]
+  @@unique([attemptId, itemId])
+  @@unique([attemptId, position])
+  @@unique([id, attemptId])
+  @@map("assessment_attempt_questions")
+}
+
+model AttemptQuestionState {
+  attemptQuestionId String @id @map("attempt_question_id") @db.Uuid
+  isFlagged Boolean @default(false) @map("is_flagged")
+  flagRevision Int @default(0) @map("flag_revision")
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  question AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("assessment_attempt_question_states")
+}
+
+model AttemptAnswer {
+  attemptQuestionId String @id @map("attempt_question_id") @db.Uuid
+  answer Json?
+  answerRevision Int @default(0) @map("answer_revision")
+  firstAnsweredAt DateTime? @map("first_answered_at") @db.Timestamptz(6)
+  finalAnsweredAt DateTime? @map("final_answered_at") @db.Timestamptz(6)
+  changeCount Int @default(0) @map("change_count")
+  question AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("assessment_attempt_answers")
+}
+
+model AssessmentMutation {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String @map("actor_id") @db.Uuid
+  operationScope String @map("operation_scope") @db.VarChar(200)
+  clientMutationId String @map("client_mutation_id") @db.Uuid
+  payloadHash String @map("payload_hash") @db.VarChar(64)
+  receipt Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([actorId, operationScope, clientMutationId])
+  @@map("assessment_mutations")
+}
+
+model AttemptGrade {
+  id String @id @default(uuid()) @db.Uuid
+  assemblyTransaction BigInt @default(dbgenerated("((pg_current_xact_id())::text)::bigint")) @map("assembly_transaction")
+  attemptId String @unique @map("attempt_id") @db.Uuid
+  earnedPoints Int @map("earned_points")
+  possiblePoints Int @map("possible_points")
+  passed Boolean
+  graderVersion String @map("grader_version") @db.VarChar(64)
+  checksum String @db.VarChar(64)
+  gradedAt DateTime @default(now()) @map("graded_at") @db.Timestamptz(6)
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  questionGrades AttemptQuestionGrade[]
+  @@unique([id, attemptId])
+  @@map("assessment_attempt_grades")
+}
+
+model AttemptQuestionGrade {
+  id String @id @default(uuid()) @db.Uuid
+  assemblyTransaction BigInt @default(dbgenerated("((pg_current_xact_id())::text)::bigint")) @map("assembly_transaction")
+  attemptQuestionId String @unique @map("attempt_question_id") @db.Uuid
+  attemptId String @map("attempt_id") @db.Uuid
+  gradeId String @map("grade_id") @db.Uuid
+  earnedPoints Int @map("earned_points")
+  possiblePoints Int @map("possible_points")
+  correct Boolean
+  reasonCode String @map("reason_code") @db.VarChar(64)
+  responseState String @map("response_state") @db.VarChar(24)
+  hadAcceptedAnswer Boolean @map("had_accepted_answer")
+  hadRecordedView Boolean @map("had_recorded_view")
+  coverage String @db.VarChar(24)
+  finalizationReason String @map("finalization_reason") @db.VarChar(24)
+  question AttemptQuestion @relation(fields: [attemptQuestionId, attemptId], references: [id, attemptId], onDelete: Restrict, onUpdate: NoAction)
+  grade AttemptGrade @relation(fields: [gradeId, attemptId], references: [id, attemptId], onDelete: Restrict, onUpdate: NoAction)
+  evidence SkillEvidence[]
+  @@unique([id, attemptId])
+  @@unique([attemptQuestionId, attemptId], map: "assessment_question_grade_owned_key")
+  @@map("assessment_attempt_question_grades")
+}
+
+model AttemptQuestionTelemetry {
+  attemptQuestionId String @id @map("attempt_question_id") @db.Uuid
+  firstViewedAt DateTime? @map("first_viewed_at") @db.Timestamptz(6)
+  estimatedActiveMs Int @default(0) @map("estimated_active_ms")
+  visitCount Int @default(0) @map("visit_count")
+  coverage String @default("unknown") @db.VarChar(24)
+  qualityFlags Json @default("[]") @map("quality_flags")
+  lastSequence Int @default(0) @map("last_sequence")
+  question AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@map("assessment_attempt_question_telemetry")
+}
+
+model AssessmentTelemetrySession {
+  id String @id @default(uuid()) @db.Uuid
+  attemptId String @map("attempt_id") @db.Uuid
+  clientSessionId String @map("client_session_id") @db.Uuid
+  lastSequence Int @default(0) @map("last_sequence")
+  activeQuestionId String? @map("active_question_id") @db.Uuid
+  lastReceiptAt DateTime? @map("last_receipt_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  activeQuestion AttemptQuestion? @relation(fields: [activeQuestionId, attemptId], references: [id, attemptId], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([attemptId, clientSessionId])
+  @@index([expiresAt])
+  @@map("assessment_telemetry_sessions")
+}
+
+model SkillEvidence {
+  id String @id @default(uuid()) @db.Uuid
+  questionGradeId String @map("question_grade_id") @db.Uuid
+  attemptId String @map("attempt_id") @db.Uuid
+  studentUserId String @map("student_user_id") @db.Uuid
+  skillId String @map("skill_id") @db.Uuid
+  role String @db.VarChar(16)
+  taxonomySnapshot Json @map("taxonomy_snapshot")
+  responseState String @map("response_state") @db.VarChar(24)
+  answeredCorrectly Boolean? @map("answered_correctly")
+  hadAcceptedAnswer Boolean @map("had_accepted_answer")
+  hadRecordedView Boolean @map("had_recorded_view")
+  coverage String @db.VarChar(24)
+  finalizationReason String @map("finalization_reason") @db.VarChar(24)
+  earnedPoints Int @map("earned_points")
+  possiblePoints Int @map("possible_points")
+  estimatedActiveMs Int? @map("estimated_active_ms")
+  timeQuality String @map("time_quality") @db.VarChar(24)
+  mode String @db.VarChar(16)
+  evidenceVersion Int @default(1) @map("evidence_version")
+  gradedAt DateTime @map("graded_at") @db.Timestamptz(6)
+  questionGrade AttemptQuestionGrade @relation(fields: [questionGradeId, attemptId], references: [id, attemptId], onDelete: Restrict, onUpdate: NoAction)
+  attempt AssessmentAttempt @relation(fields: [attemptId, studentUserId], references: [id, studentUserId], onDelete: Restrict, onUpdate: NoAction)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@unique([questionGradeId, skillId])
+  @@index([studentUserId, skillId, gradedAt])
+  @@map("assessment_skill_evidence")
+}
+
+model SkillContentLink {
+  id String @id @default(uuid()) @db.Uuid
+  skillId String @map("skill_id") @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  targetType String @map("target_type") @db.VarChar(16)
+  chapterId String? @map("chapter_id") @db.Uuid
+  lessonId String? @map("lesson_id") @db.Uuid
+  mediaPlacementId String? @map("media_placement_id") @db.Uuid
+  relationKind String @map("relation_kind") @db.VarChar(24)
+  priority Int @default(0)
+  localeNotes Json @default("{}") @map("locale_notes")
+  createdBy String @map("created_by") @db.Uuid
+  editRevision Int @default(0) @map("edit_revision")
+  status String @default("active") @db.VarChar(16)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  chapter Chapter? @relation(fields: [chapterId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  lesson Lesson? @relation(fields: [lessonId, chapterId, courseId], references: [id, chapterId, courseId], onDelete: Restrict, onUpdate: NoAction)
+  placement MediaPlacement? @relation(fields: [mediaPlacementId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@index([skillId, status])
+  @@map("assessment_skill_content_links")
+}
+
+model AssessmentJob {
+  id String @id @default(uuid()) @db.Uuid
+  attemptId String @map("attempt_id") @db.Uuid
+  kind String @db.VarChar(16)
+  deduplicationKey String @unique @map("deduplication_key") @db.VarChar(200)
+  state String @default("queued") @db.VarChar(16)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(6)
+  attempts Int @default(0)
+  maxAttempts Int @default(5) @map("max_attempts")
+  leaseToken String? @map("lease_token") @db.Uuid
+  leaseUntil DateTime? @map("lease_until") @db.Timestamptz(6)
+  fence Int @default(0)
+  errorCode String? @map("error_code") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@index([state, availableAt, leaseUntil])
+  @@map("assessment_jobs")
+}

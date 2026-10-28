@@ -1,0 +1,31 @@
+{
+  "name": "@workspace/saudisensei-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @workspace/saudisensei-runtime-config run build && next dev --hostname 0.0.0.0 --port ${PORT:-3000}",
+    "build": "pnpm --filter @workspace/saudisensei-runtime-config run build && next build",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-3000}",
+    "typecheck": "pnpm --filter @workspace/saudisensei-runtime-config run build && tsc --noEmit",
+    "test": "pnpm --filter @workspace/saudisensei-runtime-config run build && tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@workspace/saudisensei-runtime-config": "workspace:*",
+    "@auth0/nextjs-auth0": "^4.31.1",
+    "@workspace/saudisensei-api-client": "workspace:*",
+    "lucide-react": "catalog:",
+    "next": "^16.4.3",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "hls.js": "^1.7.3",
+    "tsx": "catalog:",
+    "typescript": "~5.9.3"
+  }
+}

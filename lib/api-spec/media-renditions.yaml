@@ -1,0 +1,148 @@
+paths:
+  /{scope}/{parentId}/media-library/placements/{placementId}/playback:
+    parameters:
+      - { $ref: "#/components/parameters/Scope" }
+      - { $ref: "#/components/parameters/Parent" }
+      - { $ref: "#/components/parameters/RenditionPlacement" }
+    post:
+      operationId: mediaStudentVideoPlayback
+      security: [{ bearerAuth: [] }]
+      summary: Authorize an enrolled active Student for a published current private video
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/StudentVideoPlaybackInput" } } } }
+      responses:
+        "201":
+          description: At most five minutes, clipped to enrollment and bearer expiration; fresh authorization on every renewal
+          content: { application/json: { schema: { $ref: "#/components/schemas/StudentVideoPlayback" } } }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/{scope}/{parentId}/media-library/placements/{placementId}/video-preview:
+    parameters:
+      - { $ref: "#/components/parameters/Scope" }
+      - { $ref: "#/components/parameters/Parent" }
+      - { $ref: "#/components/parameters/RenditionPlacement" }
+    post:
+      operationId: mediaAdminVideoPreview
+      security: [{ bearerAuth: [] }]
+      summary: Genuine MFA Admin inspection of a clean ready exact current or staged video revision
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminVideoInspectionInput" } } } }
+      responses:
+        "201":
+          description: Private five-minute playback with fresh authorization on every renewal; never a download
+          content: { application/json: { schema: { $ref: "#/components/schemas/AdminVideoInspection" } } }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/{scope}/{parentId}/media-library/placements/{placementId}/access:
+    parameters: &adminParams
+      - { $ref: "#/components/parameters/Scope" }
+      - { $ref: "#/components/parameters/Parent" }
+      - { $ref: "#/components/parameters/RenditionPlacement" }
+    post:
+      operationId: mediaRenditionAdminAccess
+      security: [{ bearerAuth: [] }]
+      tags: [media]
+      summary: Inspect a clean ready current or staged revision with genuine Admin MFA
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RenditionAccessInput" } } } }
+      responses:
+        "201": { $ref: "#/components/responses/RenditionAccessResponse" }
+        default: { $ref: "#/components/responses/Error" }
+  /{scope}/{parentId}/media-library/placements/{placementId}/access:
+    parameters: *adminParams
+    post:
+      operationId: mediaRenditionStudentAccess
+      security: [{ bearerAuth: [] }]
+      tags: [media]
+      summary: Issue or renew access to the exact authorized published revision
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RenditionAccessInput" } } } }
+      responses:
+        "201": { $ref: "#/components/responses/RenditionAccessResponse" }
+        default: { $ref: "#/components/responses/Error" }
+  /admin/{scope}/{parentId}/media-library/placements/{placementId}/content:
+    parameters: &contentParams
+      - { $ref: "#/components/parameters/Scope" }
+      - { $ref: "#/components/parameters/Parent" }
+      - { $ref: "#/components/parameters/RenditionPlacement" }
+      - { $ref: "#/components/parameters/RenditionCapability" }
+    get:
+      operationId: mediaRenditionAdminContent
+      security: [{ bearerAuth: [] }]
+      tags: [media]
+      summary: Authenticated private byte stream; no redirects or storage URLs
+      responses:
+        "200": { $ref: "#/components/responses/RenditionBytes" }
+        default: { $ref: "#/components/responses/Error" }
+  /{scope}/{parentId}/media-library/placements/{placementId}/content:
+    parameters: *contentParams
+    get:
+      operationId: mediaRenditionStudentContent
+      security: [{ bearerAuth: [] }]
+      tags: [media]
+      summary: Recheck current account, enrollment, publication and exact revision before streaming
+      responses:
+        "200": { $ref: "#/components/responses/RenditionBytes" }
+        default: { $ref: "#/components/responses/Error" }
+components:
+  parameters:
+    RenditionPlacement: { in: path, name: placementId, required: true, schema: { type: string, format: uuid } }
+    RenditionCapability: { in: header, name: X-Media-Capability, required: true, schema: { type: string, minLength: 40, maxLength: 2048 } }
+  responses:
+    RenditionAccessResponse:
+      description: Same-origin URL and actor-bound short-lived capability; send capability as a header, never in URLs
+      content: { application/json: { schema: { $ref: "#/components/schemas/RenditionAccess" } } }
+    RenditionBytes:
+      description: No-store private bytes, safe Content-Type and server-enforced inline/attachment disposition
+      content:
+        application/pdf: { schema: { type: string, format: binary } }
+        image/png: { schema: { type: string, format: binary } }
+        image/jpeg: { schema: { type: string, format: binary } }
+        image/webp: { schema: { type: string, format: binary } }
+        text/plain: { schema: { type: string } }
+        application/octet-stream: { schema: { type: string, format: binary } }
+  schemas:
+    StudentVideoPlaybackInput:
+      type: object
+      additionalProperties: false
+      required: [revisionId]
+      properties:
+        revisionId: { type: string, format: uuid }
+    StudentVideoPlayback:
+      type: object
+      additionalProperties: false
+      required: [manifestUrl, expiresAt, revisionId, duration]
+      properties:
+        manifestUrl: { type: string, format: uri, description: Private HLS capability for the player only; never display or log }
+        expiresAt: { type: string, format: date-time }
+        revisionId: { type: string, format: uuid }
+        duration: { type: [integer, "null"] }
+    AdminVideoInspectionInput:
+      type: object
+      additionalProperties: false
+      required: [revisionId]
+      properties:
+        revisionId: { type: string, format: uuid }
+    AdminVideoInspection:
+      type: object
+      additionalProperties: false
+      required: [manifestUrl, expiresAt, revisionId, duration]
+      properties:
+        manifestUrl: { type: string, format: uri, description: Signed private HLS; use only in the private player and never display or log }
+        expiresAt: { type: string, format: date-time }
+        revisionId: { type: string, format: uuid }
+        duration: { type: [integer, "null"] }
+    RenditionAccessInput:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [preview, download] }
+        revisionId: { type: string, format: uuid, description: Admin inspection only; Students can select only their published current revision }
+    RenditionAccess:
+      type: object
+      additionalProperties: false
+      required: [url, capability, expiresAt, revisionId, renditionId, mode, contentType, pageCount]
+      properties:
+        url: { type: string, description: Relative same-origin /lms-api URL without a token or object-store locator }
+        capability: { type: string, description: Encrypted actor-bound token; X-Media-Capability request header only }
+        expiresAt: { type: string, format: date-time }
+        revisionId: { type: string, format: uuid }
+        renditionId: { type: [string, "null"], format: uuid }
+        mode: { type: string, enum: [preview, download] }
+        contentType: { type: string }
+        pageCount: { type: [integer, "null"], minimum: 1, maximum: 500 }

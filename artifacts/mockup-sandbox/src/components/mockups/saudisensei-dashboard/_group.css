@@ -1,0 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+.ss-preview-tools { display:flex; position:relative; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; padding:10px 22px; background:#e9eeeb; color:#344f4e; font:11px/1.6 'IBM Plex Sans Arabic',sans-serif; border-block-end:1px solid #d1ddd8; }
+.ss-preview-tools>div { display:flex; gap:8px; align-items:center; }
+.ss-preview-tools button,.ss-preview-tools select { min-height:32px; padding:3px 10px; border:1px solid #bbc9c4; border-radius:7px; font:inherit; color:inherit; background:#fffef9; cursor:pointer; }
+.ss-preview-tools button:focus-visible,.ss-preview-tools select:focus-visible { outline:3px solid #d27836; outline-offset:2px; }
+.ss-preview-tools p { flex-basis:100%; margin:0; padding:8px 0; }
+@media(max-width:600px) { .ss-preview-tools { padding:8px 16px; } }

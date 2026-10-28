@@ -1,0 +1,645 @@
+openapi: 3.1.0
+info:
+  title: Admin Question Bank
+  version: 0.3.0
+  description: Private Q3 Admin authoring contracts. Every operation requires an authenticated verified active Admin and genuine signed MFA. No Student assessment endpoints.
+paths:
+  /admin/question-bank/questions:
+    get:
+      operationId: adminQuestionBankList
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/AdminBankPage" }
+        - { $ref: "#/components/parameters/AdminBankPageSize" }
+        - { name: search, in: query, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { $ref: "#/components/parameters/AdminBankStatus" }
+        - { name: type, in: query, schema: { $ref: "#/components/schemas/AdminQuestionType" } }
+        - { name: primarySkillId, in: query, schema: { type: string, format: uuid } }
+        - { name: cognitiveTag, in: query, schema: { $ref: "#/components/schemas/AdminCognitiveTag" } }
+        - { name: difficulty, in: query, schema: { $ref: "#/components/schemas/AdminQuestionDifficulty" } }
+        - { name: locale, in: query, schema: { type: string, enum: [ar, en] } }
+      responses:
+        "200": { description: Bounded Admin bank list, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionPage" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+    post:
+      operationId: adminQuestionBankCreate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionCreateInput" } } }
+      responses:
+        "201": { description: Question and mutable draft created atomically with audit, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionDetail" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/question-bank/questions/{questionId}:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankQuestionId" }
+    get:
+      operationId: adminQuestionBankGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Private Admin authoring aggregate, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionDetail" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+    patch:
+      operationId: adminQuestionBankEdit
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionEditInput" } } }
+      responses:
+        "200": { description: Entire draft replaced with optimistic concurrency, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionDetail" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/question-bank/questions/{questionId}/revisions:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankQuestionId" }
+    get:
+      operationId: adminQuestionBankRevisionList
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/AdminBankPage" }
+        - { $ref: "#/components/parameters/AdminBankPageSize" }
+      responses:
+        "200": { description: Bounded historical immutable revisions, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionRevisionPage" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+    post:
+      operationId: adminQuestionBankSeal
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionRevisionInput" } } }
+      responses:
+        "201": { description: Immutable snapshot and audit sealed atomically, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionSealResult" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/question-bank/questions/{questionId}/revisions/{revisionId}:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankQuestionId" }
+      - { name: revisionId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: adminQuestionBankRevisionGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Exact owned immutable revision; private grading data, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionRevision" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+  /admin/question-bank/questions/{questionId}/archive:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankQuestionId" }
+    post:
+      operationId: adminQuestionBankArchive
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionRevisionInput" } } }
+      responses:
+        "201": { description: Archived without changing immutable history, content: { application/json: { schema: { $ref: "#/components/schemas/AdminQuestionDetail" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/skills:
+    get:
+      operationId: adminSkillList
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/AdminBankPage" }
+        - { $ref: "#/components/parameters/AdminBankPageSize" }
+        - { $ref: "#/components/parameters/AdminBankSearch" }
+        - { $ref: "#/components/parameters/AdminBankStatus" }
+        - name: parentId
+          in: query
+          description: Immediate children only; root selects roots. Omit for all matching skills.
+          schema:
+            oneOf:
+              - { type: string, format: uuid }
+              - { type: string, enum: [root] }
+      responses:
+        "200": { description: Bounded taxonomy list, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillPage" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+    post:
+      operationId: adminSkillCreate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillCreateInput" } } }
+      responses:
+        "201": { description: Stable skill created with authored translations and audit, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillView" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/skills/{skillId}:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankSkillId" }
+    get:
+      operationId: adminSkillGet
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Skill and root-first ancestors excluding itself; use list parentId for bounded immediate children, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillDetail" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+    patch:
+      operationId: adminSkillEdit
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillEditInput" } } }
+      responses:
+        "200": { description: Metadata updated; supplied translations replace the complete map, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillView" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/skills/{skillId}/move:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankSkillId" }
+    post:
+      operationId: adminSkillMove
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillMoveInput" } } }
+      responses:
+        "201": { description: Stable ID preserved; no cycles or subtree depth above eight, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillView" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+  /admin/skills/{skillId}/archive:
+    parameters:
+      - { $ref: "#/components/parameters/AdminBankSkillId" }
+    post:
+      operationId: adminSkillArchive
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AdminExpectedRevisionInput" } } }
+      responses:
+        "201": { description: Archived skill unavailable to new seals; historical snapshots unchanged, content: { application/json: { schema: { $ref: "#/components/schemas/AdminSkillView" } } } }
+        "400": { $ref: "#/components/responses/AdminBankInvalid" }
+        "401": { $ref: "#/components/responses/AdminBankUnauthenticated" }
+        "403": { $ref: "#/components/responses/AdminBankForbidden" }
+        "404": { $ref: "#/components/responses/AdminBankNotFound" }
+        "409": { $ref: "#/components/responses/AdminBankConflict" }
+components:
+  parameters:
+    AdminBankQuestionId:
+      name: questionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AdminBankSkillId:
+      name: skillId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AdminBankPage:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100000, default: 1 }
+    AdminBankPageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    AdminBankSearch:
+      name: search
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 120 }
+    AdminBankStatus:
+      name: status
+      in: query
+      schema: { type: string, enum: [active, archived] }
+  responses:
+    AdminBankInvalid:
+      description: Invalid or unsafe authored input, incomplete localization, invalid grading definition, missing active primary skill or invalid taxonomy operation. No private content echoed.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminBankError" } } }
+    AdminBankUnauthenticated:
+      description: Authentication required.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminBankError" } } }
+    AdminBankForbidden:
+      description: Verified active local Admin and genuine signed MFA required.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminBankError" } } }
+    AdminBankNotFound:
+      description: Question, owned revision, skill or parent unavailable.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminBankError" } } }
+    AdminBankConflict:
+      description: Stale edit revision, archived aggregate, duplicate slug, concurrent mutation or SKILL_HAS_ACTIVE_CHILDREN. Mutation and audit roll back together.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminBankError" } } }
+  schemas:
+    AdminBankError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, pattern: "^[A-Z0-9_]{1,64}$" }
+        requestId: { type: string, maxLength: 80 }
+    AdminExpectedRevisionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 9007199254740991 }
+    AdminQuestionRevisionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+    AdminQuestionType:
+      type: string
+      enum: [single_choice, multiple_choice, true_false, short_text, ordering]
+    AdminQuestionDifficulty:
+      type: string
+      enum: [easy, medium, hard]
+    AdminCognitiveTag:
+      type: string
+      enum: [concept, code_tracing, debugging, problem_solving, implementation]
+    AdminQuestionCode:
+      type: object
+      additionalProperties: false
+      required: [language, source]
+      properties:
+        language: { type: string, enum: [java] }
+        source: { type: string, minLength: 1, maxLength: 20000 }
+    AdminQuestionLabel:
+      type: object
+      additionalProperties: false
+      required: [id, label]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string, minLength: 1, maxLength: 20000 }
+    AdminQuestionLocalizedContent:
+      type: object
+      additionalProperties: false
+      required: [prompt]
+      properties:
+        prompt: { type: string, minLength: 1, maxLength: 20000 }
+        code: { $ref: "#/components/schemas/AdminQuestionCode" }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 20
+          items: { $ref: "#/components/schemas/AdminQuestionLabel" }
+        items:
+          type: array
+          minItems: 2
+          maxItems: 20
+          items: { $ref: "#/components/schemas/AdminQuestionLabel" }
+    AdminQuestionContent:
+      description: At least one authored locale; defaultContentLocale must exist. Full option/item ID parity across locales; no silent translation mixing.
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        ar: { $ref: "#/components/schemas/AdminQuestionLocalizedContent" }
+        en: { $ref: "#/components/schemas/AdminQuestionLocalizedContent" }
+    AdminQuestionExplanation:
+      type: object
+      additionalProperties: false
+      properties:
+        ar: { type: string, maxLength: 20000 }
+        en: { type: string, maxLength: 20000 }
+    AdminShortTextNormalizer:
+      type: object
+      additionalProperties: false
+      required: [version, unicode, lineEndings, trim, collapseWhitespace, caseFold]
+      properties:
+        version: { type: integer, enum: [1] }
+        unicode: { type: string, enum: [NFC] }
+        lineEndings: { type: string, enum: [LF] }
+        trim: { type: boolean }
+        collapseWhitespace: { type: boolean }
+        caseFold: { type: boolean }
+    AdminAcceptedTextVariants:
+      type: array
+      minItems: 1
+      maxItems: 20
+      items: { type: string, minLength: 1, maxLength: 2000 }
+    AdminSingleChoiceDefinition:
+      type: object
+      additionalProperties: false
+      required: [type, correctOptionId]
+      properties:
+        type: { type: string, enum: [single_choice] }
+        correctOptionId: { type: string, minLength: 1, maxLength: 100 }
+    AdminMultipleChoiceDefinition:
+      type: object
+      additionalProperties: false
+      required: [type, correctOptionIds]
+      properties:
+        type: { type: string, enum: [multiple_choice] }
+        correctOptionIds:
+          type: array
+          minItems: 1
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 100 }
+    AdminTrueFalseDefinition:
+      type: object
+      additionalProperties: false
+      required: [type, correctValue]
+      properties:
+        type: { type: string, enum: [true_false] }
+        correctValue: { type: boolean }
+    AdminShortTextDefinition:
+      type: object
+      additionalProperties: false
+      required: [type, normalizer, acceptedByLocale]
+      properties:
+        type: { type: string, enum: [short_text] }
+        normalizer: { $ref: "#/components/schemas/AdminShortTextNormalizer" }
+        acceptedByLocale:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            ar: { $ref: "#/components/schemas/AdminAcceptedTextVariants" }
+            en: { $ref: "#/components/schemas/AdminAcceptedTextVariants" }
+    AdminOrderingDefinition:
+      type: object
+      additionalProperties: false
+      required: [type, correctOrderedItemIds]
+      properties:
+        type: { type: string, enum: [ordering] }
+        correctOrderedItemIds:
+          type: array
+          minItems: 2
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 100 }
+    AdminQuestionGradingDefinition:
+      description: Admin-private answer key. Never use in Student presentation or audit metadata.
+      oneOf:
+        - { $ref: "#/components/schemas/AdminSingleChoiceDefinition" }
+        - { $ref: "#/components/schemas/AdminMultipleChoiceDefinition" }
+        - { $ref: "#/components/schemas/AdminTrueFalseDefinition" }
+        - { $ref: "#/components/schemas/AdminShortTextDefinition" }
+        - { $ref: "#/components/schemas/AdminOrderingDefinition" }
+      discriminator: { propertyName: type }
+    AdminQuestionDraft:
+      description: Complete mutable authoring draft. Answer type/content/key consistency, safe Markdown and authored locale parity validated server-side. Null primary skill allowed only before sealing.
+      type: object
+      additionalProperties: false
+      required: [type, defaultContentLocale, content, gradingDefinition, explanation, defaultPoints, difficulty, primarySkillId, secondarySkillIds, cognitiveTags]
+      properties:
+        type: { $ref: "#/components/schemas/AdminQuestionType" }
+        defaultContentLocale: { type: string, enum: [ar, en] }
+        content: { $ref: "#/components/schemas/AdminQuestionContent" }
+        gradingDefinition: { $ref: "#/components/schemas/AdminQuestionGradingDefinition" }
+        explanation: { $ref: "#/components/schemas/AdminQuestionExplanation" }
+        defaultPoints: { type: integer, minimum: 1, maximum: 1000 }
+        difficulty: { $ref: "#/components/schemas/AdminQuestionDifficulty" }
+        primarySkillId: { type: [string, "null"], format: uuid }
+        secondarySkillIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        cognitiveTags:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/AdminCognitiveTag" }
+    AdminQuestionCreateInput:
+      type: object
+      additionalProperties: false
+      required: [draft]
+      properties:
+        draft: { $ref: "#/components/schemas/AdminQuestionDraft" }
+    AdminQuestionEditInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, draft]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 2147483646 }
+        draft: { $ref: "#/components/schemas/AdminQuestionDraft" }
+    AdminQuestionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, status, editRevision, currentRevisionId, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [active, archived] }
+        editRevision: { type: integer, minimum: 0 }
+        currentRevisionId: { type: [string, "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+    AdminQuestionDetail:
+      allOf:
+        - { $ref: "#/components/schemas/AdminQuestionSummary" }
+        - type: object
+          required: [draft]
+          properties:
+            draft: { $ref: "#/components/schemas/AdminQuestionDraft" }
+    AdminQuestionPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/AdminQuestionListItem" } }
+        page: { type: integer, minimum: 1, maximum: 100000 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }
+    AdminQuestionListItem:
+      allOf:
+        - { $ref: "#/components/schemas/AdminQuestionSummary" }
+        - type: object
+          required: [type, difficulty, defaultContentLocale, locales, primarySkillId, cognitiveTags]
+          properties:
+            type: { $ref: "#/components/schemas/AdminQuestionType" }
+            difficulty: { $ref: "#/components/schemas/AdminQuestionDifficulty" }
+            defaultContentLocale: { type: string, enum: [ar, en] }
+            locales: { type: array, minItems: 1, maxItems: 2, items: { type: string, enum: [ar, en] } }
+            primarySkillId: { type: [string, "null"], format: uuid }
+            cognitiveTags: { type: array, maxItems: 5, items: { $ref: "#/components/schemas/AdminCognitiveTag" } }
+    AdminQuestionRevisionSummary:
+      type: object
+      required: [id, questionId, number, type, defaultContentLocale, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        questionId: { type: string, format: uuid }
+        number: { type: integer, minimum: 1 }
+        type: { $ref: "#/components/schemas/AdminQuestionType" }
+        defaultContentLocale: { type: string, enum: [ar, en] }
+        createdAt: { type: string, format: date-time }
+    AdminSkillSnapshotLabels:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        ar: { type: string, minLength: 1, maxLength: 255 }
+        en: { type: string, minLength: 1, maxLength: 255 }
+    AdminSkillSnapshotPathItem:
+      type: object
+      required: [skillId, slug, labels]
+      properties:
+        skillId: { type: string, format: uuid }
+        slug: { type: string, maxLength: 160 }
+        labels: { $ref: "#/components/schemas/AdminSkillSnapshotLabels" }
+    AdminQuestionSkillSnapshot:
+      type: object
+      required: [skillId, role, slug, parentId, labels, path, ancestorIds]
+      properties:
+        skillId: { type: string, format: uuid }
+        role: { type: string, enum: [primary, secondary] }
+        slug: { type: string, maxLength: 160 }
+        parentId: { type: [string, "null"], format: uuid }
+        labels: { $ref: "#/components/schemas/AdminSkillSnapshotLabels" }
+        path:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: { $ref: "#/components/schemas/AdminSkillSnapshotPathItem" }
+        ancestorIds:
+          type: array
+          maxItems: 7
+          items: { type: string, format: uuid }
+    AdminQuestionRevisionContent:
+      description: Q2 immutable content snapshot carries defaultPoints beside authored locale entries, not as a top-level revision field.
+      type: object
+      additionalProperties: false
+      required: [defaultPoints]
+      properties:
+        defaultPoints: { type: integer, minimum: 1, maximum: 1000 }
+        ar: { $ref: "#/components/schemas/AdminQuestionLocalizedContent" }
+        en: { $ref: "#/components/schemas/AdminQuestionLocalizedContent" }
+    AdminQuestionRevision:
+      description: Private immutable revision; snapshots are frozen at sealing and never resolved to latest.
+      type: object
+      required: [id, questionId, number, type, defaultContentLocale, content, gradingDefinition, explanation, difficulty, skillSnapshot, cognitiveTags, schemaVersion, graderVersion, checksum, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        questionId: { type: string, format: uuid }
+        number: { type: integer, minimum: 1 }
+        type: { $ref: "#/components/schemas/AdminQuestionType" }
+        defaultContentLocale: { type: string, enum: [ar, en] }
+        content: { $ref: "#/components/schemas/AdminQuestionRevisionContent" }
+        gradingDefinition: { $ref: "#/components/schemas/AdminQuestionGradingDefinition" }
+        explanation: { $ref: "#/components/schemas/AdminQuestionExplanation" }
+        difficulty: { $ref: "#/components/schemas/AdminQuestionDifficulty" }
+        skillSnapshot:
+          type: array
+          minItems: 1
+          maxItems: 21
+          items: { $ref: "#/components/schemas/AdminQuestionSkillSnapshot" }
+        cognitiveTags: { type: array, maxItems: 5, items: { $ref: "#/components/schemas/AdminCognitiveTag" } }
+        schemaVersion: { type: integer, enum: [1] }
+        graderVersion: { type: string, enum: [deterministic-v1] }
+        checksum: { type: string, pattern: "^[0-9a-f]{64}$" }
+        createdAt: { type: string, format: date-time }
+    AdminQuestionRevisionPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/AdminQuestionRevisionSummary" } }
+        page: { type: integer, minimum: 1, maximum: 100000 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }
+    AdminQuestionSealResult:
+      type: object
+      required: [revision, editRevision]
+      properties:
+        revision: { $ref: "#/components/schemas/AdminQuestionRevision" }
+        editRevision: { type: integer, minimum: 0 }
+    AdminSkillTranslationInput:
+      type: object
+      additionalProperties: false
+      required: [label]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 2000 }
+    AdminSkillTranslationsInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        ar: { $ref: "#/components/schemas/AdminSkillTranslationInput" }
+        en: { $ref: "#/components/schemas/AdminSkillTranslationInput" }
+    AdminSkillTranslation:
+      type: object
+      additionalProperties: false
+      required: [label, description]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 255 }
+        description: { type: string, maxLength: 2000 }
+    AdminSkillTranslations:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        ar: { $ref: "#/components/schemas/AdminSkillTranslation" }
+        en: { $ref: "#/components/schemas/AdminSkillTranslation" }
+    AdminSkillCreateInput:
+      type: object
+      additionalProperties: false
+      required: [slug, translations]
+      properties:
+        slug: { type: string, minLength: 1, maxLength: 160, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        parentId: { type: [string, "null"], format: uuid }
+        translations: { $ref: "#/components/schemas/AdminSkillTranslationsInput" }
+    AdminSkillEditInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        slug: { type: string, minLength: 1, maxLength: 160, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        translations: { $ref: "#/components/schemas/AdminSkillTranslationsInput" }
+    AdminSkillMoveInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, parentId]
+      properties:
+        expectedRevision: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        parentId: { type: [string, "null"], format: uuid }
+    AdminSkillView:
+      type: object
+      required: [id, slug, parentId, status, editRevision, createdAt, translations]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, minLength: 1, maxLength: 160 }
+        parentId: { type: [string, "null"], format: uuid }
+        status: { type: string, enum: [active, archived] }
+        editRevision: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        translations: { $ref: "#/components/schemas/AdminSkillTranslations" }
+    AdminSkillDetail:
+      allOf:
+        - { $ref: "#/components/schemas/AdminSkillView" }
+        - type: object
+          required: [ancestors]
+          properties:
+            ancestors: { type: array, maxItems: 7, items: { $ref: "#/components/schemas/AdminSkillView" } }
+    AdminSkillPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/AdminSkillView" } }
+        page: { type: integer, minimum: 1, maximum: 100000 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }

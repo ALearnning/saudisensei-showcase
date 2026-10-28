@@ -1,0 +1,11 @@
+{
+  "name": "@workspace/saudisensei",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @workspace/saudisensei-web run dev",
+    "build": "pnpm --filter @workspace/saudisensei-web run build",
+    "serve": "pnpm --filter @workspace/saudisensei-web run start",
+    "typecheck": "pnpm --filter @workspace/saudisensei-web run typecheck"
+  }
+}

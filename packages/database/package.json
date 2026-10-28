@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/saudisensei-database",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {".": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}},
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "pnpm run generate && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
+    "admin:grant": "tsx scripts/grant-development-admin.ts"
+  },
+  "prisma": {"seed": "tsx prisma/seed.ts"},
+  "dependencies": {"@prisma/client": "6.19.3"},
+  "devDependencies": {"prisma": "6.19.3", "tsx": "catalog:", "typescript": "~5.9.3", "@types/node": "catalog:"}
+}

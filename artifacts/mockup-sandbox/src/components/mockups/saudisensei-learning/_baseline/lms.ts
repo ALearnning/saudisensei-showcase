@@ -1,0 +1,126 @@
+import type { Locale } from "./config";
+
+// LMS interface strings only. Course content is displayed unchanged in every locale.
+const ar = {
+  nav: { student: "مساحة الطالب", admin: "مساحة الإدارة", dashboard: "لوحة المتابعة", myCourses: "دوراتي", courses: "الدورات", students: "الطلاب", signOut: "تسجيل الخروج", main: "التنقل الرئيسي" },
+  status: { draft: "مسودة", published: "منشور", archived: "مؤرشف", active: "نشط", revoked: "ملغى", expired: "منتهي", suspended: "موقوف", deleted: "محذوف" },
+  common: {
+    loading: "جارٍ التحميل", retry: "إعادة المحاولة", refresh: "تحديث البيانات", save: "حفظ التغييرات", saving: "جارٍ الحفظ",
+    saved: "تم الحفظ", cancel: "إلغاء", confirm: "تأكيد", search: "بحث", searchPh: "ابحث بالعنوان", prev: "السابق", next: "التالي",
+    pageOf: "صفحة {p} من {n}", total: "{n} نتيجة", back: "رجوع", required: "إلزامي", optional: "اختياري",
+    readOnly: "هذا العنصر مؤرشف أو يقع ضمن عنصر مؤرشف، لذلك هو للقراءة فقط.", moveUp: "تحريك لأعلى", moveDown: "تحريك لأسفل",
+    all: "الكل", edit: "تحرير", view: "عرض", actions: "إجراءات", name: "الاسم", email: "البريد الإلكتروني", statusLabel: "الحالة",
+    updated: "تم التحديث", completed: "مكتمل",
+  },
+  errors: {
+    notFoundTitle: "غير موجود أو غير متاح", notFoundBody: "هذا المحتوى غير موجود أو لا يمكنك الوصول إليه حالياً.",
+    forbiddenTitle: "ليس لديك صلاحية", forbiddenBody: "لا يستوفي حسابك متطلبات هذه الصفحة.",
+    unavailableTitle: "الخدمة غير متاحة مؤقتاً", unavailableBody: "تعذّر تحميل البيانات. حاول مرة أخرى بعد قليل.",
+    sessionTitle: "انتهت الجلسة", sessionBody: "سجّل الدخول من جديد للمتابعة.", signIn: "تسجيل الدخول",
+    conflictTitle: "تغيّرت الدورة منذ آخر تحميل", conflictBody: "تم تعديل هذه الدورة في مكان آخر. حدّث البيانات ثم أعد تطبيق تعديلك.",
+    validation: "تحقّق من الحقول المدخلة.", generic: "تعذّر إكمال العملية. حاول مرة أخرى.",
+    transition: "لا يمكن تطبيق هذا التغيير على الحالة الحالية.", publishRule: "يتطلب النشر الأول فصلاً منشوراً يضم درساً منشوراً غير فارغ.",
+    reference: "مرجع الطلب",
+    bodyRequired: "لا يمكن نشر درس بلا نص. أضف نص الدرس واحفظه ثم انشره.",
+  },
+  student: {
+    eyebrow: "مساحة الطالب", dashTitle: "أهلاً، {name}", dashLead: "تابع من حيث توقفت. يُحسب التقدّم من الدروس الإلزامية المنشورة حالياً.",
+    statCourses: "دورات مفعّلة", statDone: "دروس إلزامية مكتملة", statRemaining: "دروس إلزامية متبقية",
+    continue: "تابع التعلّم", review: "مراجعة الدورة", open: "فتح الدورة", emptyTitle: "لا توجد دورات متاحة بعد",
+    emptyBody: "عندما يسجّلك المسؤول في دورة منشورة ستظهر هنا مباشرة.", myCoursesTitle: "دوراتي", myCoursesLead: "الدورات المنشورة التي تملك تسجيلاً نشطاً فيها.",
+    progress: "{c} من {t} دروس إلزامية", outline: "محتوى الدورة", complete: "أكملت هذا الدرس", completing: "جارٍ التسجيل",
+    completedState: "تم إكمال هذا الدرس", prevLesson: "الدرس السابق", nextLesson: "الدرس التالي", backToCourse: "العودة إلى الدورة",
+    noRequired: "لا توجد دروس إلزامية منشورة حالياً، لذلك التقدّم 0٪.", emptyLesson: "لا يحتوي هذا الدرس على نص بعد.",
+    noChapters: "لم يُنشر محتوى لهذه الدورة بعد.", courseDone: "أكملت جميع الدروس الإلزامية الحالية.", identity: "هوية الطالب مُتحقق منها",
+    lessonOf: "الدرس", noResults: "لا توجد نتائج مطابقة.",
+  },
+  admin: {
+    eyebrow: "مساحة الإدارة", dashTitle: "لوحة الإدارة", dashLead: "نظرة عامة على الدورات والتسجيلات.", identity: "صلاحية المسؤول والتحقق الإضافي مؤكدان",
+    total: "إجمالي الدورات", activeEnrollments: "تسجيلات نشطة", totalStudents: "الطلاب",
+    coursesTitle: "الدورات", coursesLead: "جميع الدورات بما فيها المسودات والمؤرشفة.", create: "إنشاء دورة", noCourses: "لا توجد دورات بعد.",
+    newTitle: "دورة جديدة", newLead: "تُنشأ الدورة كمسودة. أضف الفصول والدروس ثم انشرها.", fTitle: "العنوان", fDescription: "الوصف",
+    fBody: "نص الدرس", fBodyHelp: "Markdown مقيّد: عناوين، قوائم، رموز ومقاطع برمجية. لا HTML ولا صور أو وسائط.",
+    fRequired: "درس إلزامي يُحتسب في التقدّم", titleRequired: "العنوان مطلوب.", createSubmit: "إنشاء المسودة",
+    details: "تفاصيل الدورة", structure: "الهيكل", lifecycle: "حالة النشر", publish: "نشر", unpublish: "إعادة إلى مسودة", archive: "أرشفة",
+    publishConfirm: "سيتمكن الطلاب المسجلون من الوصول إلى المحتوى المنشور. هل تريد النشر؟",
+    unpublishConfirm: "ستُخفى الدورة عن الطلاب مع الاحتفاظ بالتسجيلات والإنجازات. متابعة؟",
+    archiveConfirm: "الأرشفة نهائية في هذه المرحلة وتجعل العنصر للقراءة فقط. متابعة؟",
+    chapters: "الفصول", addChapter: "إضافة فصل", chapterPh: "عنوان الفصل الجديد", noChapters: "لا توجد فصول بعد. أضف أول فصل.",
+    noLessons: "لا توجد دروس في هذا الفصل.", lessons: "الدروس", addLesson: "إضافة درس", chapter: "الفصل",
+    newLessonTitle: "درس نصي جديد", lessonTitle: "تحرير الدرس", chapterTitle: "تحرير الفصل", preview: "معاينة", write: "كتابة",
+    students: "الطلاب المسجّلون", manageStudents: "إدارة التسجيل", grant: "تسجيل طالب", grantPh: "ابحث بالاسم أو البريد",
+    grantBtn: "تسجيل", revoke: "إلغاء التسجيل", reactivate: "إعادة التفعيل",
+    revokeConfirm: "سيفقد الطالب الوصول فوراً مع الاحتفاظ بإنجازاته. متابعة؟", reactivateConfirm: "إعادة تفعيل وصول الطالب مع إنجازاته السابقة؟",
+    noEnrollments: "لا توجد تسجيلات مطابقة.", studentsTitle: "الطلاب", studentsLead: "ابحث عن الطلاب الحاليين لعرض تقدّمهم.",
+    noStudents: "لا يوجد طلاب مطابقون.", studentCourses: "الدورات والتقدّم", progress: "التقدّم", enrolledAt: "تاريخ التسجيل",
+    revision: "المراجعة", archivedNotice: "الدورة مؤرشفة: المحتوى للقراءة فقط ولا يمكن تسجيل طلاب جدد.",
+    minChars: "اكتب حرفين على الأقل", course: "الدورة", student: "الطالب", granted: "تم التسجيل", orderSaved: "تم حفظ الترتيب",
+    noPreview: "لا يوجد نص للمعاينة.", lessonCount: "{n} دروس", saveLesson: "إنشاء الدرس", draftHint: "يُنشأ كمسودة.",
+  },
+};
+
+type LmsCatalog = typeof ar;
+
+const en: LmsCatalog = {
+  nav: { student: "Student space", admin: "Admin space", dashboard: "Dashboard", myCourses: "My courses", courses: "Courses", students: "Students", signOut: "Sign out", main: "Main navigation" },
+  status: { draft: "Draft", published: "Published", archived: "Archived", active: "Active", revoked: "Revoked", expired: "Expired", suspended: "Suspended", deleted: "Deleted" },
+  common: {
+    loading: "Loading", retry: "Try again", refresh: "Refresh data", save: "Save changes", saving: "Saving",
+    saved: "Saved", cancel: "Cancel", confirm: "Confirm", search: "Search", searchPh: "Search by title", prev: "Previous", next: "Next",
+    pageOf: "Page {p} of {n}", total: "{n} results", back: "Back", required: "Required", optional: "Optional",
+    readOnly: "This item is archived or inside an archived item, so it is read-only.", moveUp: "Move up", moveDown: "Move down",
+    all: "All", edit: "Edit", view: "View", actions: "Actions", name: "Name", email: "Email", statusLabel: "Status",
+    updated: "Updated", completed: "Completed",
+  },
+  errors: {
+    notFoundTitle: "Not found or unavailable", notFoundBody: "This content does not exist or you can't access it right now.",
+    forbiddenTitle: "You don't have access", forbiddenBody: "Your account does not meet this page's requirements.",
+    unavailableTitle: "Service temporarily unavailable", unavailableBody: "We couldn't load the data. Please try again shortly.",
+    sessionTitle: "Session ended", sessionBody: "Sign in again to continue.", signIn: "Sign in",
+    conflictTitle: "The course changed since you loaded it", conflictBody: "This course was edited elsewhere. Refresh the data, then reapply your change.",
+    validation: "Check the fields you entered.", generic: "We couldn't complete that. Please try again.",
+    transition: "That change isn't allowed from the current status.", publishRule: "First publication needs a published chapter with a published, non-empty lesson.",
+    reference: "Request reference",
+    bodyRequired: "A lesson needs text before it can be published. Add and save the lesson text, then publish.",
+  },
+  student: {
+    eyebrow: "Student space", dashTitle: "Welcome, {name}", dashLead: "Pick up where you left off. Progress counts the required lessons published right now.",
+    statCourses: "Active courses", statDone: "Required lessons done", statRemaining: "Required lessons left",
+    continue: "Continue learning", review: "Review course", open: "Open course", emptyTitle: "No courses available yet",
+    emptyBody: "When an administrator enrolls you in a published course, it appears here right away.", myCoursesTitle: "My courses", myCoursesLead: "Published courses where your enrollment is active.",
+    progress: "{c} of {t} required lessons", outline: "Course outline", complete: "Mark lesson complete", completing: "Saving",
+    completedState: "Lesson completed", prevLesson: "Previous lesson", nextLesson: "Next lesson", backToCourse: "Back to course",
+    noRequired: "No required lessons are published right now, so progress is 0%.", emptyLesson: "This lesson has no text yet.",
+    noChapters: "No content has been published for this course yet.", courseDone: "You completed every current required lesson.", identity: "Student identity verified",
+    lessonOf: "Lesson", noResults: "No matching results.",
+  },
+  admin: {
+    eyebrow: "Admin space", dashTitle: "Admin dashboard", dashLead: "An overview of courses and enrollments.", identity: "Admin role and additional verification confirmed",
+    total: "Total courses", activeEnrollments: "Active enrollments", totalStudents: "Students",
+    coursesTitle: "Courses", coursesLead: "Every course, including drafts and archived ones.", create: "Create course", noCourses: "No courses yet.",
+    newTitle: "New course", newLead: "Courses start as drafts. Add chapters and lessons, then publish.", fTitle: "Title", fDescription: "Description",
+    fBody: "Lesson text", fBodyHelp: "Restricted Markdown: headings, lists, inline and fenced code. No HTML, images or media.",
+    fRequired: "Required lesson that counts toward progress", titleRequired: "A title is required.", createSubmit: "Create draft",
+    details: "Course details", structure: "Structure", lifecycle: "Publication", publish: "Publish", unpublish: "Return to draft", archive: "Archive",
+    publishConfirm: "Enrolled students will be able to access published content. Publish now?",
+    unpublishConfirm: "The course will be hidden from students while enrollments and completions are kept. Continue?",
+    archiveConfirm: "Archiving is final in this phase and makes the item read-only. Continue?",
+    chapters: "Chapters", addChapter: "Add chapter", chapterPh: "New chapter title", noChapters: "No chapters yet. Add the first one.",
+    noLessons: "No lessons in this chapter.", lessons: "Lessons", addLesson: "Add lesson", chapter: "Chapter",
+    newLessonTitle: "New text lesson", lessonTitle: "Edit lesson", chapterTitle: "Edit chapter", preview: "Preview", write: "Write",
+    students: "Enrolled students", manageStudents: "Manage enrollment", grant: "Enroll a student", grantPh: "Search by name or email",
+    grantBtn: "Enroll", revoke: "Revoke", reactivate: "Reactivate",
+    revokeConfirm: "The student loses access immediately; completions are kept. Continue?", reactivateConfirm: "Restore this student's access with prior completions?",
+    noEnrollments: "No matching enrollments.", studentsTitle: "Students", studentsLead: "Look up existing students to inspect their progress.",
+    noStudents: "No matching students.", studentCourses: "Courses and progress", progress: "Progress", enrolledAt: "Enrolled",
+    revision: "Revision", archivedNotice: "This course is archived: content is read-only and new enrollments are closed.",
+    minChars: "Type at least two characters", course: "Course", student: "Student", granted: "Enrolled", orderSaved: "Order saved",
+    noPreview: "Nothing to preview.", lessonCount: "{n} lessons", saveLesson: "Create lesson", draftHint: "Created as a draft.",
+  },
+};
+
+const catalogs: Record<Locale, LmsCatalog> = { ar, en };
+export function getLms(locale: Locale): LmsCatalog {
+  return catalogs[locale];
+}
+export type { LmsCatalog };

@@ -1,0 +1,25 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "UNLICENSED",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm --filter @workspace/saudisensei-api run build && pnpm --filter @workspace/saudisensei-web run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm --filter @workspace/saudisensei-database run build && pnpm --filter @workspace/saudisensei-api run typecheck && pnpm --filter @workspace/saudisensei-web run typecheck && pnpm --filter @workspace/mockup-sandbox run typecheck",
+    "test": "pnpm --filter @workspace/saudisensei-api run test && pnpm --filter @workspace/saudisensei-web run test",
+    "db:generate": "pnpm --filter @workspace/saudisensei-database run generate",
+    "db:migrate:dev": "pnpm --filter @workspace/saudisensei-database run migrate:dev",
+    "db:seed": "pnpm --filter @workspace/saudisensei-database run seed",
+    "dev:web": "pnpm --filter @workspace/saudisensei-web run dev",
+    "dev:api": "pnpm --filter @workspace/saudisensei-api run dev"
+  },
+  "private": true,
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.3"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3"
+  }
+}

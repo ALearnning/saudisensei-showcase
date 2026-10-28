@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { isLocale } from "@/i18n/config";
+import { getLms } from "@/i18n/lms";
+import { getCatalog } from "@/i18n/catalogs";
+import { gate } from "@/components/gate";
+import { StudentCourse } from "@/components/lms/student";
+
+export const dynamic = "force-dynamic";
+type Props = { params: Promise<{ locale: string; courseId: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  return { title: `${getLms(locale).student.outline} — ${getCatalog(locale).brand}`, robots: { index: false } };
+}
+
+export default async function Page({ params }: Props) {
+  const { locale, courseId } = await params;
+  if (!isLocale(locale)) notFound();
+  const blocked = await gate(locale, "student");
+  if (blocked) return blocked;
+  return <StudentCourse locale={locale} courseId={decodeURIComponent(courseId)} />;
+}
